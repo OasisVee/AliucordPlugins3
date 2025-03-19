@@ -17,10 +17,7 @@ import com.discord.widgets.chat.MessageContent
 import com.discord.widgets.chat.MessageManager
 import com.discord.widgets.chat.input.ChatInputViewModel
 import com.lytefast.flexinput.model.Attachment
-//import com.discord.api.message.LocalAttachment
-//import com.discord.utilities.attachments.AttachmentUtilsKt.toAttachment
 
-import com.google.gson.JsonSyntaxException
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -30,31 +27,19 @@ import java.lang.IndexOutOfBoundsException
 import java.util.regex.Pattern
 
 
-private fun newUpload(file: File, data: Config, log: Logger): String {
+private fun uploadToCatbox(file: File, log: Logger): String {
     val lock = Object()
     val result = StringBuilder()
 
-    // thanks Link
     synchronized(lock) {
         Utils.threadPool.execute {
             try {
                 val params = mutableMapOf<String, Any>()
-                val resp = Http.Request("${data.RequestURL}", "POST")
+                val resp = Http.Request("https://catbox.moe/user/api.php", "POST")
 
-                if (data.Headers != null)
-                {
-                    for ((k, v) in data.Headers!!.entries) {
-                        resp.setHeader(k, v)
-                    }
-                }
-
-                if (data.Arguments != null)
-                {
-                    for ((k, v) in data.Arguments!!.entries) {
-                        params[k] = v
-                    }
-                }
-                params["${data.FileFormName}"] = file
+                params["reqtype"] = "fileupload"
+                params["fileToUpload"] = file
+                
                 result.append(resp.executeWithMultipartForm(params).text())
             }
             catch (ex: Throwable) {
@@ -72,10 +57,9 @@ private fun newUpload(file: File, data: Config, log: Logger): String {
         lock.wait(9_000)
     }
     try {
-        log.debug("JSON FORMATTED:\n${JSONObject(result.toString()).toString(4)}")
-        log.debug("API RAW RESPONSE:\n${result.toString()}")
+        log.debug("API RESPONSE: ${result.toString()}")
     } catch (e: JSONException) {
-        log.debug("API RESPONSE:\n${result.toString()}")
+        log.debug("API RESPONSE: ${result.toString()}")
     }
     return result.toString()
 }
@@ -89,32 +73,13 @@ class UITH : Plugin() {
 
     private val LOG = Logger("UITH")
 
-    // source: https://github.com/TymanWasTaken/aliucord-plugins/blob/main/EncryptDMs/src/main/kotlin/tech/tyman/plugins/encryptdms/EncryptDMs.kt#L321-L326
+    // For modifying the message content
     private val textContentField = MessageContent::class.java.getDeclaredField("textContent").apply { isAccessible = true }
     private fun MessageContent.set(text: String) = textContentField.set(this, text)
-
-    // compile regex before uploading to speed up process
-    private var re = try {
-        settings.getString("regex", "https:\\/\\/[\\w./-]*").toRegex().toString()
-    } catch (e: Throwable) {
-        LOG.error(e)
-    }
-    private val pattern = Pattern.compile(re.toString())
 
     override fun start(ctx: Context) {
 
         val args = listOf(
-                Utils.createCommandOption(
-                        ApplicationCommandType.SUBCOMMAND, "add", "Add sharex config",
-                        subCommandOptions = listOf(
-                                Utils.createCommandOption(
-                                        ApplicationCommandType.STRING,
-                                        "sharex",
-                                        "Add sharex config (paste the contents)",
-                                        required = true
-                                )
-                        )
-                ),
                 Utils.createCommandOption(
                         ApplicationCommandType.SUBCOMMAND, "current", "View current UITH settings"
                 ),
@@ -129,34 +94,13 @@ class UITH : Plugin() {
                         )
                 )
         )
-        commands.registerCommand("uith", "Upload Image To Host", args) {
-            if (it.containsArg("add")) {
-                val config = try {
-                    GsonUtils.fromJson(it.getSubCommandArgs("add")?.get("sharex").toString(), Config::class.java)
-                }
-                catch (ex: JsonSyntaxException) {
-                    return@registerCommand CommandResult("Invalid sharex file data provided", null, false)
-                }
-                if (config?.RequestURL.isNullOrEmpty()) {
-                    return@registerCommand CommandResult("\"RequestURL\" must not be empty!", null, false)
-                }
-                if (config?.FileFormName.isNullOrEmpty()) {
-                    return@registerCommand CommandResult("\"FileFormName\" must not be empty!", null, false)
-                }
-                LOG.debug(config.toString())
-                settings.setString("sxcuConfig", it.getSubCommandArgs("add")?.get("sharex").toString())
-
-                return@registerCommand CommandResult("Set data successfully", null, false)
-            }
-
+        
+        commands.registerCommand("uith", "Upload Image To Catbox", args) {
             if (it.containsArg("current")) {
-                val configData = settings.getString("sxcuConfig", null)
-                val configRegex = settings.getString("regex", null)
                 val settingsUploadAllAttachments = settings.getBool("uploadAllAttachments", false)
                 val settingsPluginOff = settings.getBool("pluginOff", false)
                 val sb = StringBuilder()
-                sb.append("sxcu config:```\n$configData\n```\n\n")
-                sb.append("regex:```\n$configRegex\n```\n\n")
+                sb.append("Host: catbox.moe\n\n")
                 sb.append("uploadAllAttachments: `$settingsUploadAllAttachments`\n")
                 sb.append("pluginOff: `$settingsPluginOff`")
                 return@registerCommand CommandResult(sb.toString(), null, false)
@@ -164,10 +108,10 @@ class UITH : Plugin() {
 
             if (it.containsArg("disable")) {
                 val set = it.getSubCommandArgs("disable")?.get("disable").toString()
-                if (set.lowercase() == "true") settings.setString("pluginOff", set)
-                if (set.lowercase() == "false") settings.setString("pluginOff", set)
+                if (set.lowercase() == "true") settings.setBool("pluginOff", true)
+                if (set.lowercase() == "false") settings.setBool("pluginOff", false)
                 return@registerCommand CommandResult(
-                        "Plugin Disabled: ${settings.getString("pluginOff", false.toString())}", null, false
+                        "Plugin Disabled: ${settings.getBool("pluginOff", false)}", null, false
                 )
             }
 
@@ -199,47 +143,33 @@ class UITH : Plugin() {
             }
 
             // Check file type and don't upload if `uploadAllAttachments` is false
-            // (There might be a better way to do this lol)
             val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(firstAttachment.uri)) as String
-            if (mime !in arrayOf("png", "jpg", "jpeg", "webp")) {
+            if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
                 if (settings.getBool("uploadAllAttachments", false) == false) {
                     return@before
                 }
             }
 
-            // Don't try to upload if no sxcu config given
-            val sxcuConfig = settings.getString("sxcuConfig", null)
-            if (sxcuConfig == null) {
-                LOG.debug("sxcuConfig not provided, skipping upload...")
-                return@before
-            }
-            val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
-            //val file = toLocalAttachment(attachments[0])
-            val json = newUpload(File(firstAttachment.data.toString()), configData, LOG)
+            Utils.showToast("UITH: Uploading to catbox.moe...", false)
+            val url = uploadToCatbox(File(firstAttachment.data.toString()), LOG)
 
-            // match URL from regex
-            val url = try {
-                val matcher = pattern.matcher(json)
-                matcher.find()
-                matcher.group()
-            } catch (ex: Throwable) {
-                Utils.showToast("UITH: An error occurred, check debug logs", true)
-                LOG.error(ex)
+            // If upload failed, show error
+            if (!url.startsWith("https://")) {
+                Utils.showToast("UITH: Upload failed, check debug logs", true)
+                LOG.error("Upload failed, response: $url")
                 return@before
             }
 
-            // Send message with the URL received from host
+            // Send message with the URL received from catbox
             content.set("$plainText\n$url")
             it.args[2] = content
             it.args[3] = emptyList<Attachment<*>>()
             return@before
         }
-
     }
 
     override fun stop(ctx: Context) {
         patcher.unpatchAll()
         commands.unregisterAll()
     }
-
 }
