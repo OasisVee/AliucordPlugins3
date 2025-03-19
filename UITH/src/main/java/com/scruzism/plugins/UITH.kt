@@ -17,8 +17,6 @@ import com.discord.widgets.chat.MessageContent
 import com.discord.widgets.chat.MessageManager
 import com.discord.widgets.chat.input.ChatInputViewModel
 import com.lytefast.flexinput.model.Attachment
-//import com.discord.api.message.LocalAttachment
-//import com.discord.utilities.attachments.AttachmentUtilsKt.toAttachment
 
 import com.google.gson.JsonSyntaxException
 import org.json.JSONException
@@ -28,7 +26,6 @@ import java.io.File
 import java.io.IOException
 import java.lang.IndexOutOfBoundsException
 import java.util.regex.Pattern
-
 
 private fun newUpload(file: File, data: Config, log: Logger): String {
     val lock = Object()
@@ -41,29 +38,25 @@ private fun newUpload(file: File, data: Config, log: Logger): String {
                 val params = mutableMapOf<String, Any>()
                 val resp = Http.Request("${data.RequestURL}", "POST")
 
-                if (data.Headers != null)
-                {
+                if (data.Headers != null) {
                     for ((k, v) in data.Headers!!.entries) {
                         resp.setHeader(k, v)
                     }
                 }
 
-                if (data.Arguments != null)
-                {
+                if (data.Arguments != null) {
                     for ((k, v) in data.Arguments!!.entries) {
                         params[k] = v
                     }
                 }
                 params["${data.FileFormName}"] = file
                 result.append(resp.executeWithMultipartForm(params).text())
-            }
-            catch (ex: Throwable) {
+            } catch (ex: Throwable) {
                 if (ex is IOException) {
                     log.debug("${ex.message} | ${ex.cause} | $ex | ${ex.printStackTrace()}")
                 }
                 log.error(ex)
-            }
-            finally {
+            } finally {
                 synchronized(lock) {
                     lock.notifyAll()
                 }
@@ -102,39 +95,44 @@ class UITH : Plugin() {
     private val pattern = Pattern.compile(re.toString())
 
     override fun start(ctx: Context) {
-
         val args = listOf(
-                Utils.createCommandOption(
-                        ApplicationCommandType.SUBCOMMAND, "add", "Add sharex config",
-                        subCommandOptions = listOf(
-                                Utils.createCommandOption(
-                                        ApplicationCommandType.STRING,
-                                        "sharex",
-                                        "Add sharex config (paste the contents)",
-                                        required = true
-                                )
-                        )
-                ),
-                Utils.createCommandOption(
-                        ApplicationCommandType.SUBCOMMAND, "current", "View current UITH settings"
-                ),
-                Utils.createCommandOption(
-                        ApplicationCommandType.SUBCOMMAND, "disable", "Disable plugin",
-                        subCommandOptions = listOf(
-                                Utils.createCommandOption(
-                                        ApplicationCommandType.BOOLEAN,
-                                        "disable",
-                                        required = true
-                                )
-                        )
+            Utils.createCommandOption(
+                ApplicationCommandType.SUBCOMMAND,
+                "add",
+                "Add sharex config",
+                subCommandOptions = listOf(
+                    Utils.createCommandOption(
+                        ApplicationCommandType.STRING,
+                        "sharex",
+                        "Add sharex config (paste the contents)",
+                        required = true
+                    )
                 )
+            ),
+            Utils.createCommandOption(
+                ApplicationCommandType.SUBCOMMAND,
+                "current",
+                "View current UITH settings"
+            ),
+            Utils.createCommandOption(
+                ApplicationCommandType.SUBCOMMAND,
+                "disable",
+                "Disable plugin",
+                subCommandOptions = listOf(
+                    Utils.createCommandOption(
+                        ApplicationCommandType.BOOLEAN,
+                        "disable",
+                        required = true
+                    )
+                )
+            )
         )
+
         commands.registerCommand("uith", "Upload Image To Host", args) {
             if (it.containsArg("add")) {
                 val config = try {
                     GsonUtils.fromJson(it.getSubCommandArgs("add")?.get("sharex").toString(), Config::class.java)
-                }
-                catch (ex: JsonSyntaxException) {
+                } catch (ex: JsonSyntaxException) {
                     return@registerCommand CommandResult("Invalid sharex file data provided", null, false)
                 }
                 if (config?.RequestURL.isNullOrEmpty()) {
@@ -167,83 +165,83 @@ class UITH : Plugin() {
                 if (set.lowercase() == "true") settings.setString("pluginOff", set)
                 if (set.lowercase() == "false") settings.setString("pluginOff", set)
                 return@registerCommand CommandResult(
-                        "Plugin Disabled: ${settings.getString("pluginOff", false.toString())}", null, false
+                    "Plugin Disabled: ${settings.getString("pluginOff", false.toString())}",
+                    null,
+                    false
                 )
             }
 
             CommandResult("", null, false)
         }
 
-patcher.before<ChatInputViewModel>(
-        "sendMessage",
-        Context::class.java,
-        MessageManager::class.java,
-        MessageContent::class.java,
-        List::class.java,
-        Boolean::class.javaPrimitiveType!!,
-        Function1::class.java
-) {
-    val context = it.args[0] as Context
-    val content = it.args[2] as MessageContent
-    val plainText = content.textContent
-    val attachments = (it.args[3] as List<Attachment<*>>).toMutableList()
+        patcher.before<ChatInputViewModel>(
+            "sendMessage",
+            Context::class.java,
+            MessageManager::class.java,
+            MessageContent::class.java,
+            List::class.java,
+            Boolean::class.javaPrimitiveType!!,
+            Function1::class.java
+        ) {
+            val context = it.args[0] as Context
+            val content = it.args[2] as MessageContent
+            val plainText = content.textContent
+            val attachments = (it.args[3] as List<Attachment<*>>).toMutableList()
     
-    // Check if plugin is OFF
-    if (settings.getBool("pluginOff", false)) { return@before }
+            // Check if plugin is OFF
+            if (settings.getBool("pluginOff", false)) { return@before }
     
-    // Check if there are any attachments
-    if (attachments.isEmpty()) { return@before }
+            // Check if there are any attachments
+            if (attachments.isEmpty()) { return@before }
 
-    // Don't try to upload if no sxcu config given
-    val sxcuConfig = settings.getString("sxcuConfig", null)
-    if (sxcuConfig == null) {
-        LOG.debug("sxcuConfig not provided, skipping upload...")
-        return@before
-    }
-    val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
-    
-    // Process all attachments
-    val uploadedUrls = mutableListOf<String>()
-    
-    for (attachment in attachments) {
-        // Check file type for each attachment
-        val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(attachment.uri)) as String
-        if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
-            if (!settings.getBool("uploadAllAttachments", false)) {
-                continue
+            // Don't try to upload if no sxcu config given
+            val sxcuConfig = settings.getString("sxcuConfig", null)
+            if (sxcuConfig == null) {
+                LOG.debug("sxcuConfig not provided, skipping upload...")
+                return@before
             }
-        }
+            val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
+    
+            // Process all attachments
+            val uploadedUrls = mutableListOf<String>()
+    
+            for (attachment in attachments) {
+                // Check file type for each attachment
+                val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(attachment.uri)) as String
+                if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
+                    if (!settings.getBool("uploadAllAttachments", false)) {
+                        continue
+                    }
+                }
 
-        try {
-            val json = newUpload(File(attachment.data.toString()), configData, LOG)
+                try {
+                    val json = newUpload(File(attachment.data.toString()), configData, LOG)
             
-            // match URL from regex
-            val matcher = pattern.matcher(json)
-            if (matcher.find()) {
-                uploadedUrls.add(matcher.group())
+                    // match URL from regex
+                    val matcher = pattern.matcher(json)
+                    if (matcher.find()) {
+                        uploadedUrls.add(matcher.group())
+                    }
+                } catch (ex: Throwable) {
+                    LOG.error(ex)
+                    Utils.showToast("UITH: Failed to upload one or more files", true)
+                    continue
+                }
             }
-        } catch (ex: Throwable) {
-            LOG.error(ex)
-            Utils.showToast("UITH: Failed to upload one or more files", true)
-            continue
-        }
-    }
 
-    if (uploadedUrls.isNotEmpty()) {
-        // Join all URLs with newlines and add to the message
-        content.set("$plainText\n${uploadedUrls.joinToString("\n")}")
-        it.args[2] = content
-        it.args[3] = emptyList<Attachment<*>>()
-    }
+            if (uploadedUrls.isNotEmpty()) {
+                // Join all URLs with newlines and add to the message
+                content.set("$plainText\n${uploadedUrls.joinToString("\n")}")
+                it.args[2] = content
+                it.args[3] = emptyList<Attachment<*>>()
+            }
     
-    return@before
-}
-
+            return@before
+        }
     }
 
     override fun stop(ctx: Context) {
         patcher.unpatchAll()
         commands.unregisterAll()
     }
-
 }
