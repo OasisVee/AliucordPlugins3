@@ -174,66 +174,70 @@ class UITH : Plugin() {
             CommandResult("", null, false)
         }
 
-        patcher.before<ChatInputViewModel>(
-                "sendMessage",
-                Context::class.java,
-                MessageManager::class.java,
-                MessageContent::class.java,
-                List::class.java,
-                Boolean::class.javaPrimitiveType!!,
-                Function1::class.java
-        ) {
-            val context = it.args[0] as Context
-            val content = it.args[2] as MessageContent
-            val plainText = content.textContent
-            val attachments = (it.args[3] as List<Attachment<*>>).toMutableList()
-            val firstAttachment = try { attachments[0] } catch (t: IndexOutOfBoundsException) { return@before }
+patcher.before<ChatInputViewModel>(
+        "sendMessage",
+        Context::class.java,
+        MessageManager::class.java,
+        MessageContent::class.java,
+        List::class.java,
+        Boolean::class.javaPrimitiveType!!,
+        Function1::class.java
+) {
+    val context = it.args[0] as Context
+    val content = it.args[2] as MessageContent
+    val plainText = content.textContent
+    val attachments = (it.args[3] as List<Attachment<*>>).toMutableList()
+    
+    // Check if plugin is OFF
+    if (settings.getBool("pluginOff", false)) { return@before }
+    
+    // Check if there are any attachments
+    if (attachments.isEmpty()) { return@before }
 
-            // Check if plugin is OFF
-            if (settings.getBool("pluginOff", false)) { return@before }
-
-            // Check if multiple attachments provided
-            if (attachments.size > 1) {
-                Utils.showToast("UITH: Multiple attachment uploads are not supported!", true)
-                return@before
+    // Don't try to upload if no sxcu config given
+    val sxcuConfig = settings.getString("sxcuConfig", null)
+    if (sxcuConfig == null) {
+        LOG.debug("sxcuConfig not provided, skipping upload...")
+        return@before
+    }
+    val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
+    
+    // Process all attachments
+    val uploadedUrls = mutableListOf<String>()
+    
+    for (attachment in attachments) {
+        // Check file type for each attachment
+        val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(attachment.uri)) as String
+        if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
+            if (!settings.getBool("uploadAllAttachments", false)) {
+                continue
             }
-
-            // Check file type and don't upload if `uploadAllAttachments` is false
-            // (There might be a better way to do this lol)
-            val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(firstAttachment.uri)) as String
-            if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif", "mp4")) {
-                if (settings.getBool("uploadAllAttachments", false) == false) {
-                    return@before
-                }
-            }
-
-            // Don't try to upload if no sxcu config given
-            val sxcuConfig = settings.getString("sxcuConfig", null)
-            if (sxcuConfig == null) {
-                LOG.debug("sxcuConfig not provided, skipping upload...")
-                return@before
-            }
-            val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
-            //val file = toLocalAttachment(attachments[0])
-            val json = newUpload(File(firstAttachment.data.toString()), configData, LOG)
-
-            // match URL from regex
-            val url = try {
-                val matcher = pattern.matcher(json)
-                matcher.find()
-                matcher.group()
-            } catch (ex: Throwable) {
-                Utils.showToast("UITH: An error occurred, check debug logs", true)
-                LOG.error(ex)
-                return@before
-            }
-
-            // Send message with the URL received from host
-            content.set("$plainText\n$url")
-            it.args[2] = content
-            it.args[3] = emptyList<Attachment<*>>()
-            return@before
         }
+
+        try {
+            val json = newUpload(File(attachment.data.toString()), configData, LOG)
+            
+            // match URL from regex
+            val matcher = pattern.matcher(json)
+            if (matcher.find()) {
+                uploadedUrls.add(matcher.group())
+            }
+        } catch (ex: Throwable) {
+            LOG.error(ex)
+            Utils.showToast("UITH: Failed to upload one or more files", true)
+            continue
+        }
+    }
+
+    if (uploadedUrls.isNotEmpty()) {
+        // Join all URLs with newlines and add to the message
+        content.set("$plainText\n${uploadedUrls.joinToString("\n")}")
+        it.args[2] = content
+        it.args[3] = emptyList<Attachment<*>>()
+    }
+    
+    return@before
+}
 
     }
 
