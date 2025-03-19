@@ -201,7 +201,7 @@ class UITH : Plugin() {
             // Check file type and don't upload if `uploadAllAttachments` is false
             // (There might be a better way to do this lol)
             val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(firstAttachment.uri)) as String
-            if (mime !in arrayOf("png", "jpg", "jpeg", "webp")) {
+            if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif", "mp4")) {
                 if (settings.getBool("uploadAllAttachments", false) == false) {
                     return@before
                 }
