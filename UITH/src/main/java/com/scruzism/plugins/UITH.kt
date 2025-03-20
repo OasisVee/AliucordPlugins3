@@ -2,6 +2,7 @@ package com.scruzism.plugins
 
 import android.content.Context
 import android.webkit.MimeTypeMap
+import android.net.Uri
 
 import com.aliucord.Http
 import com.aliucord.Logger
@@ -82,17 +83,42 @@ class UITH : Plugin() {
 
     private val LOG = Logger("UITH")
 
-    // source: https://github.com/TymanWasTaken/aliucord-plugins/blob/main/EncryptDMs/src/main/kotlin/tech/tyman/plugins/encryptdms/EncryptDMs.kt#L321-L326
     private val textContentField = MessageContent::class.java.getDeclaredField("textContent").apply { isAccessible = true }
     private fun MessageContent.set(text: String) = textContentField.set(this, text)
 
-    // compile regex before uploading to speed up process
     private var re = try {
         settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*").toRegex().toString()
     } catch (e: Throwable) {
         LOG.error(e)
     }
     private val pattern = Pattern.compile(re.toString())
+
+    private fun getFileFromAttachment(context: Context, attachment: Attachment<*>): File? {
+        return try {
+            val attachmentData = attachment.data.toString()
+            when {
+                attachmentData.startsWith("content://") -> {
+                    // Handle content URI
+                    val uri = Uri.parse(attachmentData)
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val tempFile = File.createTempFile("uith_", null, context.cacheDir)
+                    inputStream?.use { input ->
+                        tempFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    tempFile
+                }
+                else -> {
+                    // Handle direct file path
+                    File(attachmentData)
+                }
+            }
+        } catch (e: Exception) {
+            LOG.error(e)
+            null
+        }
+    }
 
     override fun start(ctx: Context) {
         val args = listOf(
@@ -207,7 +233,7 @@ class UITH : Plugin() {
     
             for (attachment in attachments) {
                 // Check file type for each attachment
-                val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(attachment.uri)) as String
+                val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(attachment.uri)) as String
                 if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
                     if (!settings.getBool("uploadAllAttachments", false)) {
                         continue
@@ -215,12 +241,25 @@ class UITH : Plugin() {
                 }
 
                 try {
-                    val json = newUpload(File(attachment.data.toString()), configData, LOG)
+                    // Get file using the new helper method
+                    val file = getFileFromAttachment(context, attachment)
+                    if (file == null) {
+                        LOG.error("Failed to get file from attachment")
+                        Utils.showToast("UITH: Failed to process file", true)
+                        continue
+                    }
+
+                    val json = newUpload(file, configData, LOG)
             
                     // match URL from regex
                     val matcher = pattern.matcher(json)
                     if (matcher.find()) {
                         uploadedUrls.add(matcher.group())
+                    }
+
+                    // Clean up temporary file if it was created
+                    if (file.parent == context.cacheDir.path) {
+                        file.delete()
                     }
                 } catch (ex: Throwable) {
                     LOG.error(ex)
