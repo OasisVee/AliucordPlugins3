@@ -86,13 +86,13 @@ class UITH : Plugin() {
     private val textContentField = MessageContent::class.java.getDeclaredField("textContent").apply { isAccessible = true }
     private fun MessageContent.set(text: String) = textContentField.set(this, text)
 
-    private var re = try {
-        settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*").toRegex().toString()
+    private val re = try {
+        settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*")
     } catch (e: Throwable) {
         LOG.error(e)
-        "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*"  // Default regex pattern as fallback
+        "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*"  // Default regex pattern
     }
-    private val pattern = Pattern.compile(re.toString())
+    private val pattern = Pattern.compile(re)
 
     private fun getFileFromAttachment(context: Context, attachment: Attachment<*>): File? {
         return try {
