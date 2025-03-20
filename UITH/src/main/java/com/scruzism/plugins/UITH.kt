@@ -90,6 +90,7 @@ class UITH : Plugin() {
         settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*").toRegex().toString()
     } catch (e: Throwable) {
         LOG.error(e)
+        "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*"  // Default regex pattern as fallback
     }
     private val pattern = Pattern.compile(re.toString())
 
