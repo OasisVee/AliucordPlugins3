@@ -2,13 +2,11 @@ package com.scruzism.plugins
 
 import android.content.Context
 import android.webkit.MimeTypeMap
-
 import com.aliucord.Http
 import com.aliucord.Logger
 import com.aliucord.Utils
 import com.aliucord.entities.Plugin
 import com.aliucord.annotations.AliucordPlugin
-
 import com.aliucord.patcher.before
 import com.aliucord.utils.GsonUtils
 import com.aliucord.api.CommandsAPI.CommandResult
@@ -17,61 +15,12 @@ import com.discord.widgets.chat.MessageContent
 import com.discord.widgets.chat.MessageManager
 import com.discord.widgets.chat.input.ChatInputViewModel
 import com.lytefast.flexinput.model.Attachment
-
 import com.google.gson.JsonSyntaxException
 import org.json.JSONException
 import org.json.JSONObject
-
 import java.io.File
 import java.io.IOException
-import java.lang.IndexOutOfBoundsException
 import java.util.regex.Pattern
-
-private fun newUpload(file: File, data: Config, log: Logger): String {
-    val lock = Object()
-    val result = StringBuilder()
-
-    // thanks Link
-    synchronized(lock) {
-        Utils.threadPool.execute {
-            try {
-                val params = mutableMapOf<String, Any>()
-                val resp = Http.Request("${data.RequestURL}", "POST")
-
-                if (data.Headers != null) {
-                    for ((k, v) in data.Headers!!.entries) {
-                        resp.setHeader(k, v)
-                    }
-                }
-
-                if (data.Arguments != null) {
-                    for ((k, v) in data.Arguments!!.entries) {
-                        params[k] = v
-                    }
-                }
-                params["${data.FileFormName}"] = file
-                result.append(resp.executeWithMultipartForm(params).text())
-            } catch (ex: Throwable) {
-                if (ex is IOException) {
-                    log.debug("${ex.message} | ${ex.cause} | $ex | ${ex.printStackTrace()}")
-                }
-                log.error(ex)
-            } finally {
-                synchronized(lock) {
-                    lock.notifyAll()
-                }
-            }
-        }
-        lock.wait(9_000)
-    }
-    try {
-        log.debug("JSON FORMATTED:\n${JSONObject(result.toString()).toString(4)}")
-        log.debug("API RAW RESPONSE:\n${result.toString()}")
-    } catch (e: JSONException) {
-        log.debug("API RESPONSE:\n${result.toString()}")
-    }
-    return result.toString()
-}
 
 @AliucordPlugin
 class UITH : Plugin() {
@@ -91,8 +40,9 @@ class UITH : Plugin() {
         settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*").toRegex().toString()
     } catch (e: Throwable) {
         LOG.error(e)
+        ""
     }
-    private val pattern = Pattern.compile(re.toString())
+    private val pattern = Pattern.compile(re)
 
     override fun start(ctx: Context) {
         val args = listOf(
@@ -143,7 +93,6 @@ class UITH : Plugin() {
                 }
                 LOG.debug(config.toString())
                 settings.setString("sxcuConfig", it.getSubCommandArgs("add")?.get("sharex").toString())
-
                 return@registerCommand CommandResult("Set data successfully", null, false)
             }
 
@@ -162,8 +111,9 @@ class UITH : Plugin() {
 
             if (it.containsArg("disable")) {
                 val set = it.getSubCommandArgs("disable")?.get("disable").toString()
-                if (set.lowercase() == "true") settings.setString("pluginOff", set)
-                if (set.lowercase() == "false") settings.setString("pluginOff", set)
+                if (set.lowercase() == "true" || set.lowercase() == "false") {
+                    settings.setString("pluginOff", set)
+                }
                 return@registerCommand CommandResult(
                     "Plugin Disabled: ${settings.getString("pluginOff", false.toString())}",
                     null,
@@ -187,10 +137,10 @@ class UITH : Plugin() {
             val content = it.args[2] as MessageContent
             val plainText = content.textContent
             val attachments = (it.args[3] as List<Attachment<*>>).toMutableList()
-    
+
             // Check if plugin is OFF
             if (settings.getBool("pluginOff", false)) { return@before }
-    
+
             // Check if there are any attachments
             if (attachments.isEmpty()) { return@before }
 
@@ -201,13 +151,13 @@ class UITH : Plugin() {
                 return@before
             }
             val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
-    
+
             // Process all attachments
             val uploadedUrls = mutableListOf<String>()
-    
+
             for (attachment in attachments) {
                 // Check file type for each attachment
-                val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(attachment.uri)) as String
+                val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(attachment.uri)) ?: ""
                 if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
                     if (!settings.getBool("uploadAllAttachments", false)) {
                         continue
@@ -215,13 +165,22 @@ class UITH : Plugin() {
                 }
 
                 try {
-                    val json = newUpload(File(attachment.data.toString()), configData, LOG)
-            
+                    // Create a temporary file from the attachment uri
+                    val tempFile = createTempFileFromUri(context, attachment.uri, "upload_${System.currentTimeMillis()}.$mime")
+                    if (tempFile == null) {
+                        LOG.error("Failed to create temporary file from attachment uri: ${attachment.uri}")
+                        continue
+                    }
+                    val json = newUpload(tempFile, configData, LOG)
+
                     // match URL from regex
                     val matcher = pattern.matcher(json)
                     if (matcher.find()) {
                         uploadedUrls.add(matcher.group())
                     }
+                    
+                    // Optionally delete the temporary file after upload
+                    tempFile.delete()
                 } catch (ex: Throwable) {
                     LOG.error(ex)
                     Utils.showToast("UITH: Failed to upload one or more files", true)
@@ -230,12 +189,12 @@ class UITH : Plugin() {
             }
 
             if (uploadedUrls.isNotEmpty()) {
-                // Join all URLs with newlines and add to the message
+                // Join all URLs with newlines and add them to the message
                 content.set("$plainText\n${uploadedUrls.joinToString("\n")}")
                 it.args[2] = content
                 it.args[3] = emptyList<Attachment<*>>()
             }
-    
+
             return@before
         }
     }
@@ -243,5 +202,47 @@ class UITH : Plugin() {
     override fun stop(ctx: Context) {
         patcher.unpatchAll()
         commands.unregisterAll()
+    }
+
+    private fun newUpload(file: File, data: Config, log: Logger): String {
+        val lock = Object()
+        val result = StringBuilder()
+
+        // thanks Link
+        synchronized(lock) {
+            Utils.threadPool.execute {
+                try {
+                    val params = mutableMapOf<String, Any>()
+                    val resp = Http.Request("${data.RequestURL}", "POST")
+
+                    data.Headers?.forEach { (k, v) ->
+                        resp.setHeader(k, v)
+                    }
+
+                    data.Arguments?.forEach { (k, v) ->
+                        params[k] = v
+                    }
+                    params[data.FileFormName] = file
+                    result.append(resp.executeWithMultipartForm(params).text())
+                } catch (ex: Throwable) {
+                    if (ex is IOException) {
+                        log.debug("${ex.message} | ${ex.cause} | $ex | ${ex.printStackTrace()}")
+                    }
+                    log.error(ex)
+                } finally {
+                    synchronized(lock) {
+                        lock.notifyAll()
+                    }
+                }
+            }
+            lock.wait(9_000)
+        }
+        try {
+            log.debug("JSON FORMATTED:\n${JSONObject(result.toString()).toString(4)}")
+            log.debug("API RAW RESPONSE:\n${result.toString()}")
+        } catch (e: JSONException) {
+            log.debug("API RESPONSE:\n${result.toString()}")
+        }
+        return result.toString()
     }
 }
