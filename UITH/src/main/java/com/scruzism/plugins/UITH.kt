@@ -22,6 +22,9 @@ import java.io.File
 import java.io.IOException
 import java.util.regex.Pattern
 
+// Import the helper function
+import com.scruzism.plugins.createTempFileFromUri
+
 @AliucordPlugin
 class UITH : Plugin() {
 
@@ -39,7 +42,7 @@ class UITH : Plugin() {
     private var re = try {
         settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*").toRegex().toString()
     } catch (e: Throwable) {
-        LOG.error(e)
+        LOG.error(e.message ?: "Regex error", e)
         ""
     }
     private val pattern = Pattern.compile(re)
@@ -111,11 +114,10 @@ class UITH : Plugin() {
 
             if (it.containsArg("disable")) {
                 val set = it.getSubCommandArgs("disable")?.get("disable").toString()
-                if (set.lowercase() == "true" || set.lowercase() == "false") {
-                    settings.setString("pluginOff", set)
-                }
+                // Use setBool instead of setString for a Boolean setting.
+                settings.setBool("pluginOff", set.lowercase() == "true")
                 return@registerCommand CommandResult(
-                    "Plugin Disabled: ${settings.getString("pluginOff", false.toString())}",
+                    "Plugin Disabled: ${settings.getBool("pluginOff", false)}",
                     null,
                     false
                 )
@@ -178,11 +180,11 @@ class UITH : Plugin() {
                     if (matcher.find()) {
                         uploadedUrls.add(matcher.group())
                     }
-                    
+
                     // Optionally delete the temporary file after upload
                     tempFile.delete()
                 } catch (ex: Throwable) {
-                    LOG.error(ex)
+                    LOG.error(ex.message ?: "Error during upload", ex)
                     Utils.showToast("UITH: Failed to upload one or more files", true)
                     continue
                 }
@@ -208,7 +210,6 @@ class UITH : Plugin() {
         val lock = Object()
         val result = StringBuilder()
 
-        // thanks Link
         synchronized(lock) {
             Utils.threadPool.execute {
                 try {
@@ -226,9 +227,10 @@ class UITH : Plugin() {
                     result.append(resp.executeWithMultipartForm(params).text())
                 } catch (ex: Throwable) {
                     if (ex is IOException) {
-                        log.debug("${ex.message} | ${ex.cause} | $ex | ${ex.printStackTrace()}")
+                        log.debug("${ex.message} | ${ex.cause} | $ex")
+                        ex.printStackTrace()
                     }
-                    log.error(ex)
+                    log.error(ex.message ?: "Unknown error", ex)
                 } finally {
                     synchronized(lock) {
                         lock.notifyAll()
