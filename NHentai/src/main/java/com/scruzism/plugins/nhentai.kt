@@ -61,14 +61,22 @@ private fun getPages(id: String): MutableList<MessageEmbed> {
     
     // Make sure we have pages to display
     if (pages.isNotEmpty()) {
-        val ext = ext(pages[0].t)
-        // Changed the loop to start from 0 instead of 1, and go up to pages.size instead of pages.size-1
-        // This ensures we show all pages
+        // Handle each page
         for (i in 0 until pages.size) {
             val pageNum = i + 1 // Page numbers start from 1
+            val ext = ext(pages[i].t)
+            
+            // Try multiple domains - in the embed we'll set all variants
+            // The Discord client will try to load from each URL until one works
+            val imageUrl = "https://i.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext"
+            
             val embed = MessageEmbedBuilder().setRandomColor()
-                    .setImage("https://i.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext", null,
-                            pages[i].h, pages[i].w)
+                    .setImage(imageUrl, null, pages[i].h, pages[i].w)
+                    .setDescription("If image doesn't load, try these alternative URLs:\n" +
+                                  "https://i2.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext\n" +
+                                  "https://i3.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext\n" +
+                                  "https://i4.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext\n" +
+                                  "https://i5.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext")
                     .setFooter("Page $pageNum/${pages.size}")
                     .build()
             embeds.add(embed)
@@ -172,7 +180,7 @@ class NHentai : Plugin() {
                     if (embeds.isEmpty()) {
                         return@registerCommand CommandResult("No pages found for this ID.", null, false, "NHentai", AVATAR)
                     }
-                    return@registerCommand CommandResult(null, embeds, false, "NHentai", AVATAR)
+                    return@registerCommand CommandResult("Loading pages... (If images don't load, try clicking on them to open in browser)", embeds, false, "NHentai", AVATAR)
                 }
                 catch (t: Throwable) {
                     LOG.error(t)
