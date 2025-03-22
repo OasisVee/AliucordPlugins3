@@ -1,6 +1,8 @@
 package com.scruzism.plugins
 
 import android.content.Context
+import android.util.LruCache
+import androidx.annotation.Keep
 
 import com.aliucord.Http
 import com.aliucord.Logger
@@ -15,10 +17,18 @@ import com.discord.api.commands.ApplicationCommandType
 import com.discord.api.message.embed.MessageEmbed
 
 import java.util.Date
+import java.io.IOException
 import java.text.SimpleDateFormat
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 val BASE_URL = "https://nhentai.net/api"
 val AVATAR   = "https://media.discordapp.net/attachments/807840893054353430/907975245951029278/42k98qa0aam31.png"
+val DOMAINS = listOf("i", "i2", "i3", "i4", "i5", "i6", "i7", "i8", "i9")
+
+// Cache to store working domains for specific galleries
+private val workingDomainCache = ConcurrentHashMap<String, String>()
 
 // convert to proper extension
 private fun ext(t: String): String {
@@ -36,13 +46,47 @@ private fun Int.humanize(): String {
     return SimpleDateFormat("dd MMM yyyy").format(date)
 }
 
+// Find a working domain for this gallery
+private fun findWorkingDomain(mediaId: Int): String {
+    // Check if we already found a working domain for this gallery
+    val cacheKey = "gallery_$mediaId"
+    workingDomainCache[cacheKey]?.let { return it }
+    
+    // Try each domain until one works
+    for (domain in DOMAINS) {
+        val url = "https://$domain.nhentai.net/galleries/$mediaId/1.jpg"
+        try {
+            val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = 1500
+            connection.readTimeout = 1500
+            
+            if (connection.responseCode == 200) {
+                // Cache this domain as working for this gallery
+                workingDomainCache[cacheKey] = domain
+                return domain
+            }
+        } catch (e: Exception) {
+            // Try next domain
+            continue
+        }
+    }
+    
+    // Default to first domain if none worked
+    return DOMAINS[0]
+}
+
 // (info)
 // get the comic details and send as embed
 private fun getComic(id: String): MessageEmbed {
     val result = Http.simpleJsonGet(BASE_URL + "/gallery/$id", Result::class.java)
+    
+    // Find working domain for this gallery
+    val domain = findWorkingDomain(result.media_id)
+    
     return MessageEmbedBuilder().setRandomColor()
             .setTitle(result.title.pretty)
-            .setImage("https://t.nhentai.net/galleries/${result.media_id}/cover.${ext(result.images.cover.t)}",
+            .setImage("https://$domain.nhentai.net/galleries/${result.media_id}/cover.${ext(result.images.cover.t)}",
                     null, result.images.cover.h, result.images.cover.w)
             .addField("ID", result.id.toString(), false)
             .addField("Number of Pages", result.num_pages.toString(), false)
@@ -61,22 +105,18 @@ private fun getPages(id: String): MutableList<MessageEmbed> {
     
     // Make sure we have pages to display
     if (pages.isNotEmpty()) {
+        // Find a working domain for this gallery
+        val domain = findWorkingDomain(result.media_id)
+        
         // Handle each page
         for (i in 0 until pages.size) {
             val pageNum = i + 1 // Page numbers start from 1
             val ext = ext(pages[i].t)
             
-            // Try multiple domains - in the embed we'll set all variants
-            // The Discord client will try to load from each URL until one works
-            val imageUrl = "https://i.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext"
+            val imageUrl = "https://$domain.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext"
             
             val embed = MessageEmbedBuilder().setRandomColor()
                     .setImage(imageUrl, null, pages[i].h, pages[i].w)
-                    .setDescription("If image doesn't load, try these alternative URLs:\n" +
-                                  "https://i2.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext\n" +
-                                  "https://i3.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext\n" +
-                                  "https://i4.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext\n" +
-                                  "https://i5.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext")
                     .setFooter("Page $pageNum/${pages.size}")
                     .build()
             embeds.add(embed)
@@ -180,7 +220,7 @@ class NHentai : Plugin() {
                     if (embeds.isEmpty()) {
                         return@registerCommand CommandResult("No pages found for this ID.", null, false, "NHentai", AVATAR)
                     }
-                    return@registerCommand CommandResult("Loading pages... (If images don't load, try clicking on them to open in browser)", embeds, false, "NHentai", AVATAR)
+                    return@registerCommand CommandResult("Loading pages... (Please wait while optimizing image loading)", embeds, false, "NHentai", AVATAR)
                 }
                 catch (t: Throwable) {
                     LOG.error(t)
@@ -205,6 +245,8 @@ class NHentai : Plugin() {
         }
     }
 
-    override fun stop(ctx: Context) = commands.unregisterAll()
-
+    override fun stop(ctx: Context) {
+        workingDomainCache.clear()
+        commands.unregisterAll()
+    }
 }
