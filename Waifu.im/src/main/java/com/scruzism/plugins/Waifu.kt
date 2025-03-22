@@ -25,7 +25,7 @@ class Result(
 }
 
 private fun request(tag: String, isNsfw: Boolean, log: Logger): Result {
-    val url = StringBuilder("https://api.waifu.im/random/?gif=false&selected_tags=$tag")
+    val url = StringBuilder("https://api.waifu.im/search/?gif=false&selected_tags=$tag")
     if (isNsfw) {
         url.append("&is_nsfw=true")
     }
