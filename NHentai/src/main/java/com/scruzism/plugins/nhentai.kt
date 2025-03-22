@@ -54,17 +54,25 @@ private fun getComic(id: String): MessageEmbed {
 // (pages)
 // get the pages of the comic and send as embed
 private fun getPages(id: String): MutableList<MessageEmbed> {
+    // First get the comic info to get the media_id
     val result = Http.simpleJsonGet("$BASE_URL/gallery/$id", PageData::class.java)
     val pages = result.images.pages
-    val ext = ext(pages[0].t)
     val embeds = mutableListOf<MessageEmbed>()
-    for (i in 1 until (pages.size - 1)) {
-        val embed = MessageEmbedBuilder().setRandomColor()
-                .setImage("https://i.nhentai.net/galleries/${result.media_id}/${i}.$ext", null,
-                        pages[i].h, pages[i].w)
-                .setFooter(i.toString())
-                .build()
-        embeds.add(embed)
+    
+    // Make sure we have pages to display
+    if (pages.isNotEmpty()) {
+        val ext = ext(pages[0].t)
+        // Changed the loop to start from 0 instead of 1, and go up to pages.size instead of pages.size-1
+        // This ensures we show all pages
+        for (i in 0 until pages.size) {
+            val pageNum = i + 1 // Page numbers start from 1
+            val embed = MessageEmbedBuilder().setRandomColor()
+                    .setImage("https://i.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext", null,
+                            pages[i].h, pages[i].w)
+                    .setFooter("Page $pageNum/${pages.size}")
+                    .build()
+            embeds.add(embed)
+        }
     }
     return embeds
 }
@@ -151,9 +159,9 @@ class NHentai : Plugin() {
                     val embed = getComic(id)
                     return@registerCommand CommandResult(null, mutableListOf(embed), false, "NHentai", AVATAR)
                 }
-                catch (t: Http.HttpException) {
+                catch (t: Throwable) {
                     LOG.error(t)
-                    return@registerCommand CommandResult(t.res.statusMessage, null, false, "NHentai", AVATAR)
+                    return@registerCommand CommandResult("An error occurred: ${t.message}", null, false, "NHentai", AVATAR)
                 }
             }
 
@@ -161,11 +169,14 @@ class NHentai : Plugin() {
                 try {
                     val id = it.getSubCommandArgs("pages")?.get("id").toString()
                     val embeds = getPages(id)
-                    return@registerCommand CommandResult(null, embeds, false, "Nhentai", AVATAR)
+                    if (embeds.isEmpty()) {
+                        return@registerCommand CommandResult("No pages found for this ID.", null, false, "NHentai", AVATAR)
+                    }
+                    return@registerCommand CommandResult(null, embeds, false, "NHentai", AVATAR)
                 }
-                catch (t: Http.HttpException) {
+                catch (t: Throwable) {
                     LOG.error(t)
-                    return@registerCommand CommandResult(t.res.statusMessage, null, false, "NHentai", AVATAR)
+                    return@registerCommand CommandResult("An error occurred: ${t.message}", null, false, "NHentai", AVATAR)
                 }
             }
 
@@ -174,11 +185,11 @@ class NHentai : Plugin() {
                     val query = it.getSubCommandArgs("search")?.get("query").toString()
                     val sort = it.getStringOrDefault("sort", "date")
                     val embeds = getSearch(query, sort)
-                    return@registerCommand CommandResult(null, embeds, false)
+                    return@registerCommand CommandResult(null, embeds, false, "NHentai", AVATAR)
                 }
-                catch (t: Http.HttpException) {
+                catch (t: Throwable) {
                     LOG.error(t)
-                    return@registerCommand CommandResult(t.res.statusMessage, null, false)
+                    return@registerCommand CommandResult("An error occurred: ${t.message}", null, false, "NHentai", AVATAR)
                 }
             }
             CommandResult("An unknown error occurred. Please check the Debug Logs for info and ask scruz if help needed.",
