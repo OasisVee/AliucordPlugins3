@@ -64,20 +64,26 @@ class Waifu : Plugin() {
     override fun start(ctx: Context) {
         // sfwChoices
         val sfwChoices = listOf(
+                createCommandChoice("kamisato ayaka", "kamisato-ayaka"),
+                createCommandChoice("marin kitagawa", "marin-kitagawa"),
                 createCommandChoice("maid", "maid"),
-                createCommandChoice("mori-calliope", "mori-calliope"),
+                createCommandChoice("mori calliope", "mori-calliope"),
                 createCommandChoice("oppai", "oppai"),
                 createCommandChoice("uniform", "uniform"),
-                createCommandChoice("raiden-shogun","raiden-shogun"),
+                createCommandChoice("raiden shogun","raiden-shogun"),
                 createCommandChoice("selfies", "selfies"),
                 createCommandChoice("waifu", "waifu"),
         )
         
         // Add some NSFW choices as well
         val nsfwChoices = listOf(
-                createCommandChoice("hentai", "hentai"),
+                createCommandChoice("ass", "ass"),
+                createCommandChoice("ecchi", "ecchi"),
                 createCommandChoice("ero", "ero"),
-                createCommandChoice("ecchi", "ecchi")
+                createCommandChoice("hentai", "hentai"),
+                createCommandChoice("milf", "milf"),
+                createCommandChoice("oral", "oral"),
+                createCommandChoice("paizuri", "paizuri")
         )
         
         // Combine all choices based on whether it's NSFW or not
