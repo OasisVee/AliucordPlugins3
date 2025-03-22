@@ -25,11 +25,26 @@ class Result(
 }
 
 private fun request(tag: String, isNsfw: Boolean, log: Logger): Result {
-    val url = StringBuilder("https://api.waifu.im/search/?gif=false&selected_tags=$tag")
-    if (isNsfw) {
-        url.append("&is_nsfw=true")
+    // Construct the URL with properly formatted tags
+    val baseUrl = "https://api.waifu.im/search/?gif=false"
+    
+    // Create separate URLs for NSFW and SFW requests
+    val url = if (isNsfw) {
+        "$baseUrl&is_nsfw=true&included_tags=$tag"
+    } else {
+        "$baseUrl&is_nsfw=false&included_tags=$tag"
     }
-    return Http.simpleJsonGet(url.toString(), Result::class.java)
+    
+    log.debug("Making request to: $url")
+    
+    try {
+        val result = Http.simpleJsonGet(url, Result::class.java)
+        log.debug("Received ${result.images.size} images")
+        return result
+    } catch (e: Exception) {
+        log.error("Error fetching images", e)
+        throw e
+    }
 }
 
 private fun createEmbed(url: String, height: String, width: String): MessageEmbed {
@@ -57,14 +72,23 @@ class Waifu : Plugin() {
                 createCommandChoice("selfies", "selfies"),
                 createCommandChoice("waifu", "waifu"),
         )
-        // TODO: nsfwChoices
+        
+        // Add some NSFW choices as well
+        val nsfwChoices = listOf(
+                createCommandChoice("hentai", "hentai"),
+                createCommandChoice("ero", "ero"),
+                createCommandChoice("ecchi", "ecchi")
+        )
+        
+        // Combine all choices based on whether it's NSFW or not
+        val allChoices = sfwChoices + nsfwChoices
 
         val args = listOf(
                 Utils.createCommandOption(
                         ApplicationCommandType.STRING,
                         "tags",
                         "Choose a tag - Default: waifu",
-                        choices = sfwChoices
+                        choices = allChoices
                 ),
                 Utils.createCommandOption(
                         ApplicationCommandType.BOOLEAN,
@@ -83,17 +107,27 @@ class Waifu : Plugin() {
             val isNsfw = it.getBoolOrDefault("is_nsfw", false)
             val send = it.getBoolOrDefault("send", false)
 
-            val result = request(sfwTag, isNsfw, log).images[0]
+            try {
+                val result = request(sfwTag, isNsfw, log)
+                
+                // Check if we got any images back
+                if (result.images.isEmpty()) {
+                    return@registerCommand CommandResult("No images found for tag: $sfwTag", null, false)
+                }
+                
+                val image = result.images[0]
 
-            if (!send) {
-                val embed = createEmbed(result.url, result.height, result.width)
-                return@registerCommand CommandResult(null, mutableListOf(embed), false)
+                if (!send) {
+                    val embed = createEmbed(image.url, image.height, image.width)
+                    return@registerCommand CommandResult(null, mutableListOf(embed), false)
+                }
+
+                CommandResult(image.url, null, send)
+            } catch (e: Exception) {
+                CommandResult("Error: ${e.message}", null, false)
             }
-
-            CommandResult(result.url, null, send)
         }
     }
 
     override fun stop(ctx: Context) = commands.unregisterAll()
-
 }
