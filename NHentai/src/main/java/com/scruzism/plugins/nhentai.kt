@@ -20,7 +20,7 @@ import kotlin.random.Random
 
 val BASE_URL = "https://nhentai.net/api"
 val AVATAR   = "https://media.discordapp.net/attachments/807840893054353430/907975245951029278/42k98qa0aam31.png"
-val DOMAINS = listOf("i", "i2", "i3", "i4", "i5")
+val DOMAINS = listOf("i1", "i2", "i3", "i4", "i5")
 
 // convert to proper extension
 private fun ext(t: String): String {
