@@ -14,10 +14,9 @@ import com.aliucord.entities.MessageEmbedBuilder
 import com.aliucord.fragments.SettingsPage
 import com.aliucord.utils.DimenUtils
 import com.discord.api.commands.ApplicationCommandType
+import com.discord.views.CheckedSetting
 import com.lytefast.flexinput.R
-import com.lytefast.flexinput.fragment.settings.SettingsPageFragment
 import com.aliucord.views.TextInput
-import kotlin.collections.mutableListOf
 import java.net.URLEncoder
 
 data class APIResponse(
@@ -73,7 +72,7 @@ class ScreenshotAPI : Plugin() {
 
     override fun stop(ctx: Context) = commands.unregisterAll()
 
-    override fun getSettingsPage(ctx: Context): SettingsPageFragment {
+    override fun getSettingsPage(ctx: Context): SettingsPage {
         return ScreenshotAPISettings()
     }
 
@@ -83,7 +82,7 @@ class ScreenshotAPI : Plugin() {
             setActionBarTitle("ScreenshotAPI Settings")
 
             val ctx = view.context
-            val plugin = PluginManager.plugins["ScreenshotAPI"] as ScreenshotAPI
+            val plugin = PluginManager.getPlugin("ScreenshotAPI") as ScreenshotAPI
 
             val layout = LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
