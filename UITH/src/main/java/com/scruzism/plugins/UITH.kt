@@ -1,6 +1,7 @@
 package com.scruzism.plugins
 
 import android.content.Context
+import android.net.Uri
 import android.webkit.MimeTypeMap
 
 import com.aliucord.Http
@@ -23,7 +24,9 @@ import org.json.JSONException
 import org.json.JSONObject
 
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.lang.IndexOutOfBoundsException
 import java.util.regex.Pattern
 
@@ -207,7 +210,14 @@ class UITH : Plugin() {
     
             for (attachment in attachments) {
                 // Check file type for each attachment
-                val mime = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.getContentResolver().getType(attachment.uri)) as String
+                val mimeType = context.getContentResolver().getType(attachment.uri)
+                val mime = if (mimeType != null) {
+                    MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+                } else {
+                    attachment.uri.toString().substringAfterLast('.', "")
+                }
+                
+                // Check if we should process this file type
                 if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
                     if (!settings.getBool("uploadAllAttachments", false)) {
                         continue
@@ -215,12 +225,33 @@ class UITH : Plugin() {
                 }
 
                 try {
-                    val json = newUpload(File(attachment.data.toString()), configData, LOG)
-            
-                    // match URL from regex
-                    val matcher = pattern.matcher(json)
-                    if (matcher.find()) {
-                        uploadedUrls.add(matcher.group())
+                    // Create a temp file from the attachment URI
+                    val tempFile = File.createTempFile("uith_", ".${mime ?: "tmp"}")
+                    tempFile.deleteOnExit()
+                    
+                    // Copy the content from the URI to the temp file
+                    val inputStream = context.contentResolver.openInputStream(attachment.uri)
+                    if (inputStream != null) {
+                        FileOutputStream(tempFile).use { output ->
+                            inputStream.copyTo(output)
+                            inputStream.close()
+                        }
+                        
+                        // Now upload the temp file
+                        val json = newUpload(tempFile, configData, LOG)
+                
+                        // match URL from regex
+                        val matcher = pattern.matcher(json)
+                        if (matcher.find()) {
+                            uploadedUrls.add(matcher.group())
+                        }
+                        
+                        // Try to delete the temp file
+                        try {
+                            tempFile.delete()
+                        } catch (e: Exception) {
+                            LOG.debug("Failed to delete temp file: ${e.message}")
+                        }
                     }
                 } catch (ex: Throwable) {
                     LOG.error(ex)
