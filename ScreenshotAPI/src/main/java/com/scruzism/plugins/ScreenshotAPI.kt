@@ -14,19 +14,20 @@ import com.aliucord.entities.MessageEmbedBuilder
 import com.aliucord.fragments.SettingsPage
 import com.aliucord.utils.DimenUtils
 import com.discord.api.commands.ApplicationCommandType
-import com.discord.views.CheckedSetting
 import com.lytefast.flexinput.R
 import com.aliucord.views.TextInput
 import java.net.URLEncoder
 
-data class APIResponse(
-    val screenshot: String
-)
-
+// Data class to match actual API response structure
+// No need for "screenshot" field as it's using direct URL
 @AliucordPlugin
 class ScreenshotAPI : Plugin() {
 
     private val log = Logger("ScreenshotAPI")
+    
+    init {
+        settingsTab = SettingsTab(ScreenshotAPISettings::class.java)
+    }
 
     override fun start(ctx: Context) {
         val args = listOf(
@@ -52,20 +53,19 @@ class ScreenshotAPI : Plugin() {
                     return@registerCommand CommandsAPI.CommandResult("API key is not set. Please configure the API key in settings.", null, false)
                 }
 
-                val httpUrl = StringBuilder("https://api.screenshotmachine.com?key=$apiKey&url=$url&dimension=1024x768&format=png")
-                    .toString()
+                // Direct URL to the screenshot image
+                val imageUrl = "https://api.screenshotmachine.com?key=$apiKey&url=$url&dimension=1024x768&format=png"
                 log.debug(url)
-                val result = Http.Request(httpUrl, "GET").execute().json(APIResponse::class.java).screenshot
-
+                
                 if (!shouldSend) {
-                    val embed = MessageEmbedBuilder().setRandomColor().setImage(result, null, 876, 1680).build()
+                    val embed = MessageEmbedBuilder().setRandomColor().setImage(imageUrl, null, 876, 1680).build()
                     return@registerCommand CommandsAPI.CommandResult(null, mutableListOf(embed), false, "ScreenshotAPI")
                 }
 
-                CommandsAPI.CommandResult(result, null, shouldSend, "ScreenshotAPI")
+                return@registerCommand CommandsAPI.CommandResult(imageUrl, null, shouldSend, "ScreenshotAPI")
             } catch (t: Throwable) {
                 log.error(t)
-                CommandsAPI.CommandResult("An error occurred. Check Debug Logs", null, false)
+                return@registerCommand CommandsAPI.CommandResult("An error occurred. Check Debug Logs", null, false)
             }
         }
     }
@@ -82,14 +82,9 @@ class ScreenshotAPI : Plugin() {
             setActionBarTitle("ScreenshotAPI Settings")
 
             val ctx = view.context
-            val plugin = PluginManager.getPlugin("ScreenshotAPI") as ScreenshotAPI
+            val plugin = PluginManager.plugins["ScreenshotAPI"] as ScreenshotAPI
 
-            val layout = LinearLayout(ctx).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(DimenUtils.defaultPadding, DimenUtils.defaultPadding, DimenUtils.defaultPadding, DimenUtils.defaultPadding)
-            }
-
-            TextInput(ctx, "API Key").run {
+            TextInput(ctx, "ScreenshotMachine API Key").run {
                 editText.run {
                     maxLines = 1
                     setText(plugin.settings.getString("api_key", ""))
@@ -103,15 +98,14 @@ class ScreenshotAPI : Plugin() {
                         }
                     })
                 }
-                layout.addView(this)
+                
+                linearLayout.addView(this)
             }
 
             TextView(ctx, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
                 text = "You can get a free API key from screenshotmachine.com. The plugin will not work without a valid API key."
-                layout.addView(this)
+                linearLayout.addView(this)
             }
-
-            addView(layout)
         }
     }
 }
