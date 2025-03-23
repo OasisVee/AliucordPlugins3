@@ -102,12 +102,12 @@ class UITH : Plugin() {
             Utils.createCommandOption(
                 ApplicationCommandType.SUBCOMMAND,
                 "add",
-                "Add sharex config",
+                "Add json config",
                 subCommandOptions = listOf(
                     Utils.createCommandOption(
                         ApplicationCommandType.STRING,
                         "sharex",
-                        "Add sharex config (paste the contents)",
+                        "Add json config (paste the contents)",
                         required = true
                     )
                 )
