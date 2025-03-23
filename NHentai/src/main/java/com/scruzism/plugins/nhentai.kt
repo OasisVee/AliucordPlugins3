@@ -16,11 +16,10 @@ import com.discord.api.message.embed.MessageEmbed
 
 import java.util.Date
 import java.text.SimpleDateFormat
-import kotlin.random.Random
 
 val BASE_URL = "https://nhentai.net/api"
 val AVATAR   = "https://media.discordapp.net/attachments/807840893054353430/907975245951029278/42k98qa0aam31.png"
-val DOMAINS = listOf("i1", "i2", "i3", "i4", "i5")
+val DOMAIN = "i2"
 
 // convert to proper extension
 private fun ext(t: String): String {
@@ -42,13 +41,10 @@ private fun Int.humanize(): String {
 // get the comic details and send as embed
 private fun getComic(id: String): MessageEmbed {
     val result = Http.simpleJsonGet(BASE_URL + "/gallery/$id", Result::class.java)
-    
-    // Use a random domain for thumbnails to increase chance of success
-    val domain = DOMAINS[Random.nextInt(DOMAINS.size)]
-    
+
     return MessageEmbedBuilder().setRandomColor()
             .setTitle(result.title.pretty)
-            .setImage("https://$domain.nhentai.net/galleries/${result.media_id}/cover.${ext(result.images.cover.t)}",
+            .setImage("https://$DOMAIN.nhentai.net/galleries/${result.media_id}/cover.${ext(result.images.cover.t)}",
                     null, result.images.cover.h, result.images.cover.w)
             .addField("ID", result.id.toString(), false)
             .addField("Number of Pages", result.num_pages.toString(), false)
@@ -64,18 +60,16 @@ private fun getPages(id: String): MutableList<MessageEmbed> {
     val result = Http.simpleJsonGet("$BASE_URL/gallery/$id", PageData::class.java)
     val pages = result.images.pages
     val embeds = mutableListOf<MessageEmbed>()
-    
+
     // Make sure we have pages to display
     if (pages.isNotEmpty()) {
         // For each page, create an embed
         for (i in 0 until pages.size) {
             val pageNum = i + 1 // Page numbers start from 1
             val ext = ext(pages[i].t)
-            
-            // Use a random domain for each page
-            val domain = DOMAINS[Random.nextInt(DOMAINS.size)]
-            val imageUrl = "https://$domain.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext"
-            
+
+            val imageUrl = "https://$DOMAIN.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext"
+
             val embed = MessageEmbedBuilder().setRandomColor()
                     .setImage(imageUrl, null, pages[i].h, pages[i].w)
                     .setFooter("Page $pageNum/${pages.size}")
