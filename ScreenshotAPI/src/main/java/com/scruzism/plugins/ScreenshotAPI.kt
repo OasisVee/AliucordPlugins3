@@ -1,6 +1,9 @@
 package com.scruzism.plugins
 
 import android.content.Context
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import com.aliucord.Http
 import com.aliucord.Utils
 import com.aliucord.Logger
@@ -8,11 +11,13 @@ import com.aliucord.api.CommandsAPI
 import com.aliucord.entities.Plugin
 import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.entities.MessageEmbedBuilder
-import com.aliucord.entities.PluginSettings
 import com.aliucord.fragments.SettingsPage
+import com.aliucord.utils.DimenUtils
 import com.discord.api.commands.ApplicationCommandType
-import com.discord.views.CheckedSetting
 import com.lytefast.flexinput.R
+import com.lytefast.flexinput.fragment.settings.SettingsPageFragment
+import com.aliucord.views.TextInput
+import kotlin.collections.mutableListOf
 import java.net.URLEncoder
 
 data class APIResponse(
@@ -68,39 +73,46 @@ class ScreenshotAPI : Plugin() {
 
     override fun stop(ctx: Context) = commands.unregisterAll()
 
-    override fun getSettingsLayout(ctx: Context): SettingsPage {
-        return object : SettingsPage() {
-            @SuppressLint("SetTextI18n")
-            override fun onViewBound(view: View) {
-                super.onViewBound(view)
-                setActionBarTitle("ScreenshotAPI Settings")
+    override fun getSettingsPage(ctx: Context): SettingsPageFragment {
+        return ScreenshotAPISettings()
+    }
 
-                val ctx = view.context
-                val plugin = PluginManager.plugins["ScreenshotAPI"] as ScreenshotAPI
+    class ScreenshotAPISettings : SettingsPage() {
+        override fun onViewBound(view: View) {
+            super.onViewBound(view)
+            setActionBarTitle("ScreenshotAPI Settings")
 
-                com.aliucord.views.TextInput(ctx, "API Key").run {
-                    editText.run {
-                        maxLines = 1
-                        setText(plugin.settings.getString("api_key", ""))
-                        hint = "Enter your ScreenshotMachine API key here"
+            val ctx = view.context
+            val plugin = PluginManager.plugins["ScreenshotAPI"] as ScreenshotAPI
 
-                        addTextChangedListener(object : com.discord.utilities.view.text.TextWatcher() {
-                            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-                            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-                            override fun afterTextChanged(s: android.text.Editable) {
-                                plugin.settings.setString("api_key", s.toString())
-                            }
-                        })
-                    }
-
-                    linearLayout.addView(this)
-                }
-
-                TextView(ctx, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                    text = "You can get a free API key from screenshotmachine.com. The plugin will not work without a valid API key."
-                    linearLayout.addView(this)
-                }
+            val layout = LinearLayout(ctx).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(DimenUtils.defaultPadding, DimenUtils.defaultPadding, DimenUtils.defaultPadding, DimenUtils.defaultPadding)
             }
+
+            TextInput(ctx, "API Key").run {
+                editText.run {
+                    maxLines = 1
+                    setText(plugin.settings.getString("api_key", ""))
+                    hint = "Enter your ScreenshotMachine API key here"
+
+                    addTextChangedListener(object : com.discord.utilities.view.text.TextWatcher() {
+                        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+                        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+                        override fun afterTextChanged(s: android.text.Editable) {
+                            plugin.settings.setString("api_key", s.toString())
+                        }
+                    })
+                }
+                layout.addView(this)
+            }
+
+            TextView(ctx, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
+                text = "You can get a free API key from screenshotmachine.com. The plugin will not work without a valid API key."
+                layout.addView(this)
+            }
+
+            addView(layout)
         }
     }
 }
