@@ -74,14 +74,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // CATBOX SETTINGS HEADER
         val catboxHeader = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply { text = "Catbox Settings" }
 
-        // CATBOX USERHASH
-        TextView(ctx).apply {
-            text = "Enter your catbox.moe userhash (leave empty for anonymous uploads)"
-            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorOnPrimary))
-            setPadding(p, p, p, p)
-            addView(this)
-        }
-
         // USERHASH INPUT BOX
         val userhashInput = TextInput(ctx, "Userhash")
         userhashInput.apply {
@@ -149,6 +141,15 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(divider)
 
         addView(catboxHeader)
+        
+        // CATBOX USERHASH - Moved here to appear directly under the header
+        TextView(ctx).apply {
+            text = "Enter your catbox.moe userhash (leave empty for anonymous uploads)"
+            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorOnPrimary))
+            setPadding(p, p, p, p)
+            addView(this)
+        }
+        
         addView(userhashInput)
         addView(userhashButton)
 
