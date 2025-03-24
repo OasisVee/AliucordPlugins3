@@ -63,7 +63,7 @@ class ScreenshotAPI : Plugin() {
                 if (shouldSend) {
                     // Download the image and send as attachment
                     try {
-                        log.debug("Downloading screenshot from URL: [URL REDACTED FOR SECURITY]")
+                        log.debug("Downloading screenshot from URL: $imageUrl")
                         val res = Http.Request(imageUrl).execute()
                         log.debug("Download response received, status: ${res.statusCode}")
                         
@@ -82,11 +82,11 @@ class ScreenshotAPI : Plugin() {
                             return@registerCommand CommandsAPI.CommandResult("Failed to save screenshot. File is empty or missing.", null, false)
                         }
                         
-                        val fileUri = Uri.fromFile(file).toString()
+                        val fileUri = Uri.fromFile(file)
                         log.debug("File URI created: $fileUri")
                         
                         // Add the file as an attachment
-                        cmdContext.addAttachment(fileUri, "screenshot.png")
+                        cmdContext.attachments.add(CommandsAPI.CommandAttachment(fileUri, "screenshot.png"))
                         log.debug("Attachment added to context")
                         
                         return@registerCommand CommandsAPI.CommandResult("Screenshot attached", null, true, "ScreenshotAPI")
