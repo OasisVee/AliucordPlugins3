@@ -1,6 +1,7 @@
 package com.scruzism.plugins
 
 import android.content.Context
+import android.net.Uri
 import android.view.View
 import android.widget.TextView
 import com.aliucord.Http
@@ -15,6 +16,8 @@ import com.discord.api.commands.ApplicationCommandType
 import com.lytefast.flexinput.R
 import com.aliucord.views.TextInput
 import java.net.URLEncoder
+import java.io.File
+import java.io.FileOutputStream
 
 @AliucordPlugin
 class ScreenshotAPI : Plugin() {
@@ -55,12 +58,25 @@ class ScreenshotAPI : Plugin() {
                 val imageUrl = "https://api.screenshotmachine.com?key=$apiKey&url=$url&dimension=1024x768&format=png"
                 log.debug(url)
                 
-                if (!shouldSend) {
+                if (shouldSend) {
+                    // Download the image and send as attachment instead of sending the URL
+                    try {
+                        val res = Http.Request(imageUrl).execute(null)
+                        val file = File.createTempFile("screenshot", ".png", ctx.cacheDir)
+                        FileOutputStream(file).use { fos -> res.pipe(fos) }
+                        file.deleteOnExit()
+                        
+                        // Add the file as an attachment
+                        it.addAttachment(Uri.fromFile(file).toString(), "screenshot.png")
+                        return@registerCommand CommandsAPI.CommandResult("", null, false, "ScreenshotAPI")
+                    } catch (e: Exception) {
+                        log.error("Error downloading screenshot", e)
+                        return@registerCommand CommandsAPI.CommandResult("Failed to download screenshot. Check Debug Logs", null, false)
+                    }
+                } else {
                     val embed = MessageEmbedBuilder().setRandomColor().setImage(imageUrl, null, 876, 1680).build()
                     return@registerCommand CommandsAPI.CommandResult(null, mutableListOf(embed), false, "ScreenshotAPI")
                 }
-
-                return@registerCommand CommandsAPI.CommandResult(imageUrl, null, shouldSend, "ScreenshotAPI")
             } catch (t: Throwable) {
                 log.error(t)
                 return@registerCommand CommandsAPI.CommandResult("An error occurred. Check Debug Logs", null, false)
