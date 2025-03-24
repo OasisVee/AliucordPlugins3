@@ -22,7 +22,9 @@ class ScreenshotAPI : Plugin() {
     private val log = Logger("ScreenshotAPI")
     
     init {
-        settingsTab = SettingsTab(ScreenshotAPISettings::class.java, SettingsTab.Type.PAGE)
+        settingsTab = SettingsTab(ScreenshotAPISettings::class.java, SettingsTab.Type.PAGE).also {
+            it.plugin = this
+        }
     }
 
     override fun start(ctx: Context) {
@@ -69,13 +71,7 @@ class ScreenshotAPI : Plugin() {
     override fun stop(ctx: Context) = commands.unregisterAll()
 }
 
-class ScreenshotAPISettings() : SettingsPage() {
-
-    private lateinit var plugin: ScreenshotAPI
-
-    constructor(plugin: ScreenshotAPI) : this() {
-        this.plugin = plugin
-    }
+class ScreenshotAPISettings(private val plugin: ScreenshotAPI) : SettingsPage() {
 
     override fun onViewBound(view: View) {
         super.onViewBound(view)
