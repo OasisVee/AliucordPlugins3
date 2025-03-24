@@ -30,7 +30,7 @@ import java.io.InputStream
 import java.lang.IndexOutOfBoundsException
 import java.util.regex.Pattern
 
-private fun newUpload(file: File, data: Config, log: Logger): String {
+private fun newUpload(file: File, data: Config, log: Logger, userhash: String? = null): String {
     val lock = Object()
     val result = StringBuilder()
 
@@ -52,6 +52,12 @@ private fun newUpload(file: File, data: Config, log: Logger): String {
                         params[k] = v
                     }
                 }
+                
+                // Add userhash if provided
+                if (!userhash.isNullOrEmpty()) {
+                    params["userhash"] = userhash
+                }
+                
                 params["${data.FileFormName}"] = file
                 result.append(resp.executeWithMultipartForm(params).text())
             } catch (ex: Throwable) {
@@ -153,11 +159,14 @@ class UITH : Plugin() {
             if (it.containsArg("current")) {
                 val configData = settings.getString("jsonConfig", null)
                 val configRegex = settings.getString("regex", null)
+                val catboxUserhash = settings.getString("catboxUserhash", "")
+                val userhashDisplay = if (catboxUserhash.isNullOrEmpty()) "Not set (anonymous uploads)" else "Set"
                 val settingsUploadAllAttachments = settings.getBool("uploadAllAttachments", false)
                 val settingsPluginOff = settings.getBool("pluginOff", false)
                 val sb = StringBuilder()
                 sb.append("json config:```\n$configData\n```\n\n")
                 sb.append("regex:```\n$configRegex\n```\n\n")
+                sb.append("catbox userhash: `$userhashDisplay`\n")
                 sb.append("uploadAllAttachments: `$settingsUploadAllAttachments`\n")
                 sb.append("pluginOff: `$settingsPluginOff`")
                 return@registerCommand CommandResult(sb.toString(), null, false)
@@ -204,6 +213,9 @@ class UITH : Plugin() {
                 return@before
             }
             val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
+            
+            // Get catbox userhash if available
+            val catboxUserhash = settings.getString("catboxUserhash", "")
     
             // Process all attachments
             val uploadedUrls = mutableListOf<String>()
@@ -237,8 +249,12 @@ class UITH : Plugin() {
                             inputStream.close()
                         }
                         
-                        // Now upload the temp file
-                        val json = newUpload(tempFile, configData, LOG)
+                        // Now upload the temp file with userhash if available
+                        val json = if (catboxUserhash.isNullOrEmpty()) {
+                            newUpload(tempFile, configData, LOG)
+                        } else {
+                            newUpload(tempFile, configData, LOG, catboxUserhash)
+                        }
                 
                         // match URL from regex
                         val matcher = pattern.matcher(json)
