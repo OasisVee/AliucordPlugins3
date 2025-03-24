@@ -18,8 +18,6 @@ import com.lytefast.flexinput.R
 import com.aliucord.views.TextInput
 import java.net.URLEncoder
 
-// Data class to match actual API response structure
-// No need for "screenshot" field as it's using direct URL
 @AliucordPlugin
 class ScreenshotAPI : Plugin() {
 
@@ -72,18 +70,15 @@ class ScreenshotAPI : Plugin() {
 
     override fun stop(ctx: Context) = commands.unregisterAll()
 
-    override fun getSettingsPage(ctx: Context): SettingsPage {
-        return ScreenshotAPISettings()
-    }
-
     class ScreenshotAPISettings : SettingsPage() {
         override fun onViewBound(view: View) {
             super.onViewBound(view)
             setActionBarTitle("ScreenshotAPI Settings")
 
             val ctx = view.context
-            val plugin = PluginManager.plugins["ScreenshotAPI"] as ScreenshotAPI
+            val plugin = this@ScreenshotAPI
 
+            // Use TextInput from Aliucord views like in CheckLinks
             TextInput(ctx, "ScreenshotMachine API Key").run {
                 editText.run {
                     maxLines = 1
