@@ -69,11 +69,11 @@ class ScreenshotAPI : Plugin() {
     override fun stop(ctx: Context) = commands.unregisterAll()
 }
 
-class ScreenshotAPISettings(plugin: ScreenshotAPI) : SettingsPage() {
+class ScreenshotAPISettings() : SettingsPage() {
 
-    private val plugin: ScreenshotAPI
+    private lateinit var plugin: ScreenshotAPI
 
-    init {
+    constructor(plugin: ScreenshotAPI) : this() {
         this.plugin = plugin
     }
 
