@@ -23,7 +23,7 @@ class ScreenshotAPI : Plugin() {
     
     init {
         settingsTab = SettingsTab(ScreenshotAPISettings::class.java, SettingsTab.Type.PAGE).also {
-            it.plugin = this
+            it.withArgs(this)
         }
     }
 
