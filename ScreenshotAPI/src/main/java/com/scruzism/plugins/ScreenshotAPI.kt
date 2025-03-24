@@ -45,9 +45,9 @@ class ScreenshotAPI : Plugin() {
                 )
         )
 
-        commands.registerCommand("screenshot", "Screenshot a website", args) {
-            val url = URLEncoder.encode(it.getRequiredString("url"))
-            val shouldSend = it.getBoolOrDefault("send", false)
+        commands.registerCommand("screenshot", "Screenshot a website", args) { cmdContext ->
+            val url = URLEncoder.encode(cmdContext.getRequiredString("url"))
+            val shouldSend = cmdContext.getBoolOrDefault("send", false)
             try {
                 val apiKey = settings.getString("api_key", null)
                 if (apiKey.isNullOrEmpty()) {
@@ -56,30 +56,51 @@ class ScreenshotAPI : Plugin() {
 
                 // Direct URL to the screenshot image
                 val imageUrl = "https://api.screenshotmachine.com?key=$apiKey&url=$url&dimension=1024x768&format=png"
-                log.debug(url)
+                log.debug("Original URL: ${cmdContext.getRequiredString("url")}")
+                log.debug("Encoded URL: $url")
+                log.debug("Should send as attachment: $shouldSend")
                 
                 if (shouldSend) {
-                    // Download the image and send as attachment instead of sending the URL
+                    // Download the image and send as attachment
                     try {
+                        log.debug("Downloading screenshot from URL: [URL REDACTED FOR SECURITY]")
                         val res = Http.Request(imageUrl).execute()
+                        log.debug("Download response received, status: ${res.statusCode}")
+                        
                         val file = File.createTempFile("screenshot", ".png", ctx.cacheDir)
-                        FileOutputStream(file).use { fos -> res.pipe(fos) }
+                        log.debug("Temp file created at: ${file.absolutePath}")
+                        
+                        FileOutputStream(file).use { fos -> 
+                            res.pipe(fos)
+                            log.debug("Image data written to file, size: ${file.length()} bytes")
+                        }
                         file.deleteOnExit()
                         
+                        // Check if file exists and has content
+                        if (!file.exists() || file.length() == 0L) {
+                            log.error("File doesn't exist or is empty after download")
+                            return@registerCommand CommandsAPI.CommandResult("Failed to save screenshot. File is empty or missing.", null, false)
+                        }
+                        
+                        val fileUri = Uri.fromFile(file).toString()
+                        log.debug("File URI created: $fileUri")
+                        
                         // Add the file as an attachment
-                        it.addAttachment(Uri.fromFile(file).toString(), "screenshot.png")
-                        return@registerCommand CommandsAPI.CommandResult("", null, false, "ScreenshotAPI")
+                        cmdContext.addAttachment(fileUri, "screenshot.png")
+                        log.debug("Attachment added to context")
+                        
+                        return@registerCommand CommandsAPI.CommandResult("Screenshot attached", null, true, "ScreenshotAPI")
                     } catch (e: Exception) {
-                        log.error("Error downloading screenshot", e)
-                        return@registerCommand CommandsAPI.CommandResult("Failed to download screenshot. Check Debug Logs", null, false)
+                        log.error("Error in screenshot attachment process", e)
+                        return@registerCommand CommandsAPI.CommandResult("Failed to process screenshot: ${e.message ?: "Unknown error"}", null, false)
                     }
                 } else {
                     val embed = MessageEmbedBuilder().setRandomColor().setImage(imageUrl, null, 876, 1680).build()
                     return@registerCommand CommandsAPI.CommandResult(null, mutableListOf(embed), false, "ScreenshotAPI")
                 }
             } catch (t: Throwable) {
-                log.error(t)
-                return@registerCommand CommandsAPI.CommandResult("An error occurred. Check Debug Logs", null, false)
+                log.error("Top-level exception in command", t)
+                return@registerCommand CommandsAPI.CommandResult("An error occurred: ${t.message ?: "Unknown error"}. Check Debug Logs", null, false)
             }
         }
     }
