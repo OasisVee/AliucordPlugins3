@@ -61,7 +61,7 @@ class ScreenshotAPI : Plugin() {
                 if (shouldSend) {
                     // Download the image and send as attachment instead of sending the URL
                     try {
-                        val res = Http.Request(imageUrl).execute(null)
+                        val res = Http.Request(imageUrl).execute()
                         val file = File.createTempFile("screenshot", ".png", ctx.cacheDir)
                         FileOutputStream(file).use { fos -> res.pipe(fos) }
                         file.deleteOnExit()
