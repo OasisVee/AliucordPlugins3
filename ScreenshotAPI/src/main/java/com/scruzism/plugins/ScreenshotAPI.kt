@@ -22,7 +22,7 @@ class ScreenshotAPI : Plugin() {
     private val log = Logger("ScreenshotAPI")
     
     init {
-        settingsTab = SettingsTab(ScreenshotAPISettings::class.java, this)
+        settingsTab = SettingsTab(ScreenshotAPISettings::class.java, SettingsTab.Type.PAGE)
     }
 
     override fun start(ctx: Context) {
