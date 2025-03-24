@@ -134,9 +134,9 @@ class UITH : Plugin() {
         commands.registerCommand("uith", "Upload Image To Host", args) {
             if (it.containsArg("add")) {
                 val config = try {
-                    GsonUtils.fromJson(it.getSubCommandArgs("add")?.get("sharex").toString(), Config::class.java)
+                    GsonUtils.fromJson(it.getSubCommandArgs("add")?.get("json").toString(), Config::class.java)
                 } catch (ex: JsonSyntaxException) {
-                    return@registerCommand CommandResult("Invalid sharex file data provided", null, false)
+                    return@registerCommand CommandResult("Invalid json file data provided", null, false)
                 }
                 if (config?.RequestURL.isNullOrEmpty()) {
                     return@registerCommand CommandResult("\"RequestURL\" must not be empty!", null, false)
@@ -145,18 +145,18 @@ class UITH : Plugin() {
                     return@registerCommand CommandResult("\"FileFormName\" must not be empty!", null, false)
                 }
                 LOG.debug(config.toString())
-                settings.setString("sxcuConfig", it.getSubCommandArgs("add")?.get("sharex").toString())
+                settings.setString("jsonConfig", it.getSubCommandArgs("add")?.get("json").toString())
 
                 return@registerCommand CommandResult("Set data successfully", null, false)
             }
 
             if (it.containsArg("current")) {
-                val configData = settings.getString("sxcuConfig", null)
+                val configData = settings.getString("jsonConfig", null)
                 val configRegex = settings.getString("regex", null)
                 val settingsUploadAllAttachments = settings.getBool("uploadAllAttachments", false)
                 val settingsPluginOff = settings.getBool("pluginOff", false)
                 val sb = StringBuilder()
-                sb.append("sxcu config:```\n$configData\n```\n\n")
+                sb.append("json config:```\n$configData\n```\n\n")
                 sb.append("regex:```\n$configRegex\n```\n\n")
                 sb.append("uploadAllAttachments: `$settingsUploadAllAttachments`\n")
                 sb.append("pluginOff: `$settingsPluginOff`")
