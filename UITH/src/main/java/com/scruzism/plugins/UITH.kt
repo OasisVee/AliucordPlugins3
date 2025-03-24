@@ -198,9 +198,9 @@ class UITH : Plugin() {
             if (attachments.isEmpty()) { return@before }
 
             // Don't try to upload if no sxcu config given
-            val sxcuConfig = settings.getString("sxcuConfig", null)
+            val sxcuConfig = settings.getString("jsonConfig", null)
             if (sxcuConfig == null) {
-                LOG.debug("sxcuConfig not provided, skipping upload...")
+                LOG.debug("jsonConfig not provided, skipping upload...")
                 return@before
             }
             val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
@@ -218,7 +218,7 @@ class UITH : Plugin() {
                 }
                 
                 // Check if we should process this file type
-                if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif")) {
+                if (mime !in arrayOf("png", "jpg", "jpeg", "webp", "gif", "mp4")) {
                     if (!settings.getBool("uploadAllAttachments", false)) {
                         continue
                     }
