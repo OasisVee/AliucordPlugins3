@@ -2,7 +2,6 @@ package com.scruzism.plugins
 
 import android.content.Context
 import android.view.View
-import android.widget.LinearLayout
 import android.widget.TextView
 import com.aliucord.Http
 import com.aliucord.Utils
@@ -12,7 +11,6 @@ import com.aliucord.entities.Plugin
 import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.entities.MessageEmbedBuilder
 import com.aliucord.fragments.SettingsPage
-import com.aliucord.utils.DimenUtils
 import com.discord.api.commands.ApplicationCommandType
 import com.lytefast.flexinput.R
 import com.aliucord.views.TextInput
@@ -24,7 +22,7 @@ class ScreenshotAPI : Plugin() {
     private val log = Logger("ScreenshotAPI")
     
     init {
-        settingsTab = SettingsTab(ScreenshotAPISettings::class.java)
+        settingsTab = SettingsTab(ScreenshotAPISettings::class.java, this)
     }
 
     override fun start(ctx: Context) {
@@ -69,38 +67,37 @@ class ScreenshotAPI : Plugin() {
     }
 
     override fun stop(ctx: Context) = commands.unregisterAll()
+}
 
-    class ScreenshotAPISettings : SettingsPage() {
-        override fun onViewBound(view: View) {
-            super.onViewBound(view)
-            setActionBarTitle("ScreenshotAPI Settings")
+class ScreenshotAPISettings(private val plugin: ScreenshotAPI) : SettingsPage() {
+    override fun onViewBound(view: View) {
+        super.onViewBound(view)
+        setActionBarTitle("ScreenshotAPI Settings")
 
-            val ctx = view.context
-            val plugin = this@ScreenshotAPI
+        val ctx = view.context
 
-            // Use TextInput from Aliucord views like in CheckLinks
-            TextInput(ctx, "ScreenshotMachine API Key").run {
-                editText.run {
-                    maxLines = 1
-                    setText(plugin.settings.getString("api_key", ""))
-                    hint = "Enter your ScreenshotMachine API key here"
+        // Use TextInput from Aliucord views like in CheckLinks
+        TextInput(ctx, "ScreenshotMachine API Key").run {
+            editText.run {
+                maxLines = 1
+                setText(plugin.settings.getString("api_key", ""))
+                hint = "Enter your ScreenshotMachine API key here"
 
-                    addTextChangedListener(object : com.discord.utilities.view.text.TextWatcher() {
-                        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-                        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-                        override fun afterTextChanged(s: android.text.Editable) {
-                            plugin.settings.setString("api_key", s.toString())
-                        }
-                    })
-                }
-                
-                linearLayout.addView(this)
+                addTextChangedListener(object : com.discord.utilities.view.text.TextWatcher() {
+                    override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: android.text.Editable) {
+                        plugin.settings.setString("api_key", s.toString())
+                    }
+                })
             }
+            
+            linearLayout.addView(this)
+        }
 
-            TextView(ctx, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                text = "You can get a free API key from screenshotmachine.com. The plugin will not work without a valid API key."
-                linearLayout.addView(this)
-            }
+        TextView(ctx, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
+            text = "You can get a free API key from screenshotmachine.com. The plugin will not work without a valid API key."
+            linearLayout.addView(this)
         }
     }
 }
