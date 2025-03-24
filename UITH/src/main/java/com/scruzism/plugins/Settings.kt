@@ -71,6 +71,40 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // DIV
         val divider = Divider(ctx).apply { setPadding(p, p, p, p) }
 
+        // CATBOX SETTINGS HEADER
+        val catboxHeader = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply { text = "Catbox Settings" }
+
+        // CATBOX USERHASH
+        TextView(ctx).apply {
+            text = "Enter your catbox.moe userhash (leave empty for anonymous uploads)"
+            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorOnPrimary))
+            setPadding(p, p, p, p)
+            addView(this)
+        }
+
+        // USERHASH INPUT BOX
+        val userhashInput = TextInput(ctx, "Userhash")
+        userhashInput.apply {
+            editText.setText(settings.getString("catboxUserhash", ""))
+            editText.addTextChangedListener(object : TextWatcher() {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable) {}
+            })
+        }
+
+        // SAVE USERHASH BUTTON
+        val userhashButton = Button(ctx).apply {
+            text = "Save"
+            setOnClickListener {
+                settings.setString("catboxUserhash", userhashInput.editText.text.toString())
+                Utils.showToast("Saved")
+            }
+        }
+
+        // 2nd DIV
+        val secondDivider = Divider(ctx).apply { setPadding(p, p, p, p) }
+
         // ADVANCED SETTINGS HEADER
         val advHeader = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply { text = "Advanced Settings" }
 
@@ -94,8 +128,8 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
             }
         }
 
-        // 2nd DIV
-        val secondDivider = Divider(ctx).apply { setPadding(p, p, p, p) }
+        // 3rd DIV
+        val thirdDivider = Divider(ctx).apply { setPadding(p, p, p, p) }
 
         // LINKS HEADER
         val linksHeader = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply { text = "Links" }
@@ -114,11 +148,17 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         addView(divider)
 
+        addView(catboxHeader)
+        addView(userhashInput)
+        addView(userhashButton)
+
+        addView(secondDivider)
+
         addView(advHeader)
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
 
-        addView(secondDivider)
+        addView(thirdDivider)
         addView(linksHeader)
         addView(helpInfo)
     }
