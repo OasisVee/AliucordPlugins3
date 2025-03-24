@@ -5,19 +5,17 @@ import android.net.Uri
 import android.view.View
 import android.widget.TextView
 import com.aliucord.Http
-import com.aliucord.Utils
 import com.aliucord.Logger
+import com.aliucord.Utils
 import com.aliucord.api.CommandsAPI
-import com.aliucord.entities.Plugin
 import com.aliucord.annotations.AliucordPlugin
-import com.aliucord.entities.MessageEmbedBuilder
+import com.aliucord.entities.Plugin
 import com.aliucord.fragments.SettingsPage
 import com.discord.api.commands.ApplicationCommandType
-import com.lytefast.flexinput.R
 import com.aliucord.views.TextInput
-import java.net.URLEncoder
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URLEncoder
 
 @AliucordPlugin
 class ScreenshotAPI : Plugin() {
@@ -32,17 +30,18 @@ class ScreenshotAPI : Plugin() {
 
     override fun start(ctx: Context) {
         val args = listOf(
-                Utils.createCommandOption(
-                        ApplicationCommandType.STRING,
-                        "url",
-                        "Enter website URL",
-                        required = true
-                ),
-                Utils.createCommandOption(
-                        ApplicationCommandType.BOOLEAN,
-                        "send",
-                        "Send to chat",
-                )
+            Utils.createCommandOption(
+                ApplicationCommandType.STRING,
+                "url",
+                "Enter website URL",
+                required = true
+            ),
+            Utils.createCommandOption(
+                ApplicationCommandType.BOOLEAN,
+                "send",
+                "Send to chat",
+                required = false
+            )
         )
 
         commands.registerCommand("screenshot", "Screenshot a website", args) { cmdContext ->
