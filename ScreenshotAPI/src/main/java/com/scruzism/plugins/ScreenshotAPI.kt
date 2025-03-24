@@ -69,7 +69,16 @@ class ScreenshotAPI : Plugin() {
     override fun stop(ctx: Context) = commands.unregisterAll()
 }
 
-class ScreenshotAPISettings(private val plugin: ScreenshotAPI) : SettingsPage() {
+class ScreenshotAPISettings : SettingsPage() {
+
+    constructor() : this(ScreenshotAPI()) // Zero-argument constructor
+
+    private lateinit var plugin: ScreenshotAPI
+
+    constructor(plugin: ScreenshotAPI) : super() {
+        this.plugin = plugin
+    }
+
     override fun onViewBound(view: View) {
         super.onViewBound(view)
         setActionBarTitle("ScreenshotAPI Settings")
