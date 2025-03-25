@@ -68,6 +68,7 @@ private fun getPages(id: String): MutableList<MessageEmbed> {
             val pageNum = i + 1 // Page numbers start from 1
             val ext = ext(pages[i].t)
 
+            // Ensure the extension is always appended
             val imageUrl = "https://$DOMAIN.nhentai.net/galleries/${result.media_id}/${pageNum}.$ext"
 
             val embed = MessageEmbedBuilder().setRandomColor()
