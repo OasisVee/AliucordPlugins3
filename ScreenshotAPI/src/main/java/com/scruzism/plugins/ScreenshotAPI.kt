@@ -45,9 +45,10 @@ class ScreenshotAPI : Plugin() {
                 )
         )
 
-        commands.registerCommand("screenshot", "Screenshot a website", args) {
-            val url = URLEncoder.encode(it.getRequiredString("url"))
-            val shouldSend = it.getBoolOrDefault("send", false)
+        commands.registerCommand("screenshot", "Screenshot a website", args) { context ->
+            val url = URLEncoder.encode(context.getRequiredString("url"))
+            val shouldSend = context.getBoolOrDefault("send", false)
+            
             try {
                 val apiKey = settings.getString("api_key", null)
                 if (apiKey.isNullOrEmpty()) {
@@ -58,22 +59,15 @@ class ScreenshotAPI : Plugin() {
                 val imageUrl = "https://api.screenshotmachine.com?key=$apiKey&url=$url&dimension=1024x768&format=png"
                 log.debug(url)
                 
-                if (shouldSend) {
-                    // Download the image and send as attachment instead of sending the URL
-                    try {
-                        val res = Http.Request(imageUrl).execute()
-                        val file = File.createTempFile("screenshot", ".png", ctx.cacheDir)
-                        FileOutputStream(file).use { fos -> res.pipe(fos) }
-                        file.deleteOnExit()
-                        
-                        // Add the file as an attachment
-                        it.addAttachment(Uri.fromFile(file).toString(), "screenshot.png")
-                        return@registerCommand CommandsAPI.CommandResult("", null, false, "ScreenshotAPI")
-                    } catch (e: Exception) {
-                        log.error("Error downloading screenshot", e)
-                        return@registerCommand CommandsAPI.CommandResult("Failed to download screenshot. Check Debug Logs", null, false)
-                    }
+                // Download the image
+                val file = downloadScreenshot(imageUrl, ctx)
+                
+                if (shouldSend && file != null) {
+                    // Send as attachment
+                    context.addAttachment(Uri.fromFile(file).toString(), "screenshot.png")
+                    return@registerCommand CommandsAPI.CommandResult("", null, false, "ScreenshotAPI")
                 } else {
+                    // Create an embed with the screenshot
                     val embed = MessageEmbedBuilder().setRandomColor().setImage(imageUrl, null, 876, 1680).build()
                     return@registerCommand CommandsAPI.CommandResult(null, mutableListOf(embed), false, "ScreenshotAPI")
                 }
@@ -81,6 +75,19 @@ class ScreenshotAPI : Plugin() {
                 log.error(t)
                 return@registerCommand CommandsAPI.CommandResult("An error occurred. Check Debug Logs", null, false)
             }
+        }
+    }
+
+    private fun downloadScreenshot(imageUrl: String, ctx: Context): File? {
+        return try {
+            val res = Http.Request(imageUrl).execute()
+            val file = File.createTempFile("screenshot", ".png", ctx.cacheDir)
+            FileOutputStream(file).use { fos -> res.pipe(fos) }
+            file.deleteOnExit()
+            file
+        } catch (e: Exception) {
+            log.error("Error downloading screenshot", e)
+            null
         }
     }
 
