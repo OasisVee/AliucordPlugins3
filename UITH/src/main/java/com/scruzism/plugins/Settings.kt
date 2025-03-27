@@ -146,7 +146,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         addView(input)
         addView(button)
-        addView(resetButton)
         addView(errorField)
 
         addView(divider)
@@ -169,6 +168,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(advHeader)
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
+        addView(resetButton)
         
         addView(thirdDivider)
         addView(linksHeader)
