@@ -56,7 +56,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // SAVE BUTTON
         val button = Button(ctx).apply {
             text = "Save"
-            setBackgroundColor(0xFFFF0000.toInt()) // Set button color to red using hex value
             setOnClickListener {
                 settings.setString("regex", input.editText.text.toString().toRegex().toString())
                 Utils.showToast("Saved")
@@ -94,7 +93,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // SAVE USERHASH BUTTON
         val userhashButton = Button(ctx).apply {
             text = "Save"
-            setBackgroundColor(0xFFFF0000.toInt()) // Set button color to red using hex value
             setOnClickListener {
                 settings.setString("catboxUserhash", userhashInput.editText.text.toString())
                 Utils.showToast("Saved")
