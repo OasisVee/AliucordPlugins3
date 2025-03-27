@@ -29,7 +29,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         val p = DimenUtils.defaultPadding
 
         val errorField = TextView(ctx).apply {
-            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorError))
+            setTextColor(0xFFFF0000.toInt()) // Set color to red using hex value
             setPadding(p, p, p, p)
         }
 
