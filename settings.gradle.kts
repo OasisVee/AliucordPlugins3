@@ -18,8 +18,8 @@ project(":Ip").projectDir = File("./Ip")
 include(":NHentai")
 project(":NHentai").projectDir = File("./NHentai")
 
-include(":UITH")
-project(":UITH").projectDir = File("./UITH")
+include(":CUITH")
+project(":CUITH").projectDir = File("./UITH")
 
 include(":ChangeHypesquad")
 project(":ChangeHypesquad").projectDir = File("./ChangeHypesquad")
