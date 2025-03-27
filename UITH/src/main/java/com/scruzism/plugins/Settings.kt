@@ -139,7 +139,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // HELP/INFO
         val helpInfo = TextView(ctx).apply {
             linksClickable = true
-            text = "- Support Server: https://discord.gg/tdjBfsvhHT\n- UITH README: https://git.io/JSyri"
+            text = "- UITH README: https://git.io/JSyri"
             setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorOnPrimary))
         }
         Linkify.addLinks(helpInfo, Linkify.WEB_URLS)
