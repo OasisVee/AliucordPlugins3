@@ -34,7 +34,6 @@ private fun newUpload(file: File, data: Config, log: Logger, userhash: String? =
     val lock = Object()
     val result = StringBuilder()
 
-    // thanks Link
     synchronized(lock) {
         Utils.threadPool.execute {
             try {
@@ -115,7 +114,7 @@ class UITH : Plugin() {
     }
     private val pattern = Pattern.compile(re.toString())
 
-override fun start(ctx: Context) {
+    override fun start(ctx: Context) {
         val args = listOf(
             Utils.createCommandOption(
                 ApplicationCommandType.SUBCOMMAND,
