@@ -167,7 +167,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
         addView(resetButton)
-        
         addView(thirdDivider)
         addView(linksHeader)
         addView(helpInfo)
