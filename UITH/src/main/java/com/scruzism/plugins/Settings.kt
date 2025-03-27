@@ -28,6 +28,11 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         val ctx = requireContext()
         val p = DimenUtils.defaultPadding
 
+        val errorField = TextView(ctx).apply {
+            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorError))
+            setPadding(p, p, p, p)
+        }
+
         // HEADER
         TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply {
             text = "Regex Settings"
@@ -65,10 +70,8 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // RESET JSON BUTTON
         val resetButton = Button(ctx).apply {
             text = "Reset JSON to Default"
-            setBackgroundColor(0xFFFF0000.toInt()) // Set button color to red using hex value
-            setTextColor(ColorCompat.getColor(ctx, R.b.colorOnError))
             setOnClickListener {
-                settings.setString("jsonConfig", null)
+                settings.setString("jsonConfig", "")
                 Utils.showToast("JSON configuration reset to default")
             }
         }
@@ -141,6 +144,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         addView(input)
         addView(button)
+        addView(errorField)
 
         addView(divider)
 
@@ -162,8 +166,8 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(advHeader)
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
-        
         addView(resetButton)
+        
         addView(thirdDivider)
         addView(linksHeader)
         addView(helpInfo)
