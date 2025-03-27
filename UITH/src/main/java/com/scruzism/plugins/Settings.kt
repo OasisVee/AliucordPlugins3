@@ -94,6 +94,15 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
             }
         }
 
+        // RESET JSON CONFIG BUTTON
+        val resetJsonButton = Button(ctx).apply {
+            text = "Reset JSON Config"
+            setOnClickListener {
+                settings.setString("jsonConfig", "")
+                Utils.showToast("JSON configuration reset to default")
+            }
+        }
+
         // 2nd DIV
         val secondDivider = Divider(ctx).apply { setPadding(p, p, p, p) }
 
@@ -124,43 +133,4 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         val thirdDivider = Divider(ctx).apply { setPadding(p, p, p, p) }
 
         // LINKS HEADER
-        val linksHeader = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply { text = "Links" }
-
-        // HELP/INFO
-        val helpInfo = TextView(ctx).apply {
-            linksClickable = true
-            text = "- Support Server: https://discord.gg/tdjBfsvhHT\n- UITH README: https://git.io/JSyri"
-            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorOnPrimary))
-        }
-        Linkify.addLinks(helpInfo, Linkify.WEB_URLS)
-
-        addView(input)
-        addView(button)
-        addView(errorField)
-
-        addView(divider)
-
-        addView(catboxHeader)
-        
-        // CATBOX USERHASH - Moved here to appear directly under the header
-        TextView(ctx).apply {
-            text = "Enter your catbox.moe userhash (leave empty for anonymous uploads)"
-            setTextColor(ColorCompat.getThemedColor(ctx, R.b.colorOnPrimary))
-            setPadding(p, p, p, p)
-            addView(this)
-        }
-        
-        addView(userhashInput)
-        addView(userhashButton)
-
-        addView(secondDivider)
-
-        addView(advHeader)
-        addView(uploadAllAttachments)
-        addView(switchOffPlugin)
-
-        addView(thirdDivider)
-        addView(linksHeader)
-        addView(helpInfo)
-    }
-}
+        val linksHeader = TextView(ctx ▋

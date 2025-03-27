@@ -52,8 +52,8 @@ private fun newUpload(file: File, data: Config, log: Logger, userhash: String? =
                     }
                 }
                 
-                // Add userhash if provided
-                if (!userhash.isNullOrEmpty()) {
+                // Add userhash if provided and the host is catbox
+                if (!userhash.isNullOrEmpty() && data.Name == "catbox.moe") {
                     params["userhash"] = userhash
                 }
                 
@@ -260,8 +260,8 @@ class UITH : Plugin() {
                             inputStream.close()
                         }
                         
-                        // Now upload the temp file with userhash if available
-                        val json = if (catboxUserhash.isNullOrEmpty()) {
+                        // Now upload the temp file with userhash if available and applicable
+                        val json = if (catboxUserhash.isNullOrEmpty() || configData.Name != "catbox.moe") {
                             newUpload(tempFile, configData, LOG)
                         } else {
                             newUpload(tempFile, configData, LOG, catboxUserhash)
