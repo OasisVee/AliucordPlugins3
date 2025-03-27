@@ -18,7 +18,6 @@ import com.lytefast.flexinput.R
 import com.discord.utilities.color.ColorCompat
 import com.discord.utilities.view.text.TextWatcher
 import com.discord.views.CheckedSetting
-import com.google.gson.Gson
 
 class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
@@ -72,18 +71,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         val resetButton = Button(ctx).apply {
             text = "Reset JSON to Default"
             setOnClickListener {
-                val defaultConfig = Config(
-                    Name = "catbox.moe",
-                    DestinationType = "ImageUploader",
-                    RequestURL = "https://catbox.moe/user/api.php",
-                    FileFormName = "fileToUpload",
-                    Headers = null,
-                    Arguments = mapOf("reqtype" to "fileupload"),
-                    ResponseType = null,
-                    URL = null
-                )
-                val defaultJson = Gson().toJson(defaultConfig)
-                settings.setString("jsonConfig", defaultJson)
+                settings.setString("jsonConfig", "")
                 Utils.showToast("JSON configuration reset to default")
             }
         }
@@ -179,7 +167,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
         addView(resetButton)
-
         addView(thirdDivider)
         addView(linksHeader)
         addView(helpInfo)
