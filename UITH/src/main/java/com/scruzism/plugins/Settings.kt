@@ -24,7 +24,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
     @SuppressLint("SetTextI18n")
     override fun onViewBound(view: View?) {
         super.onViewBound(view)
-        setActionBarTitle("UITH")
+        setActionBarTitle("Cat-UITH")
         val ctx = requireContext()
         val p = DimenUtils.defaultPadding
 
@@ -167,6 +167,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
         addView(resetButton)
+        
         addView(thirdDivider)
         addView(linksHeader)
         addView(helpInfo)
