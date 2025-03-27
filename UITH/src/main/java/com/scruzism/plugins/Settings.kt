@@ -73,7 +73,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
             setBackgroundColor(ColorCompat.getColor(ctx, R.b.colorError))
             setTextColor(ColorCompat.getColor(ctx, R.b.colorOnError))
             setOnClickListener {
-                settings.delete("jsonConfig")
+                settings.setString("jsonConfig", null)
                 Utils.showToast("JSON configuration reset to default")
             }
         }
@@ -168,8 +168,8 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(advHeader)
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
-        addView(resetButton)
         
+        addView(resetButton)
         addView(thirdDivider)
         addView(linksHeader)
         addView(helpInfo)
