@@ -91,6 +91,18 @@ class UITH : Plugin() {
 
     private val LOG = Logger("UITH")
 
+    // Default Catbox Configuration
+    private val DEFAULT_CATBOX_CONFIG = Config(
+        Name = "catbox.moe",
+        DestinationType = "ImageUploader",
+        RequestURL = "https://catbox.moe/user/api.php",
+        FileFormName = "fileToUpload",
+        Headers = null,
+        Arguments = mapOf("reqtype" to "fileupload"),
+        ResponseType = null,
+        URL = null
+    )
+
     // source: https://github.com/TymanWasTaken/aliucord-plugins/blob/main/EncryptDMs/src/main/kotlin/tech/tyman/plugins/encryptdms/EncryptDMs.kt#L321-L326
     private val textContentField = MessageContent::class.java.getDeclaredField("textContent").apply { isAccessible = true }
     private fun MessageContent.set(text: String) = textContentField.set(this, text)
@@ -103,7 +115,7 @@ class UITH : Plugin() {
     }
     private val pattern = Pattern.compile(re.toString())
 
-    override fun start(ctx: Context) {
+override fun start(ctx: Context) {
         val args = listOf(
             Utils.createCommandOption(
                 ApplicationCommandType.SUBCOMMAND,
@@ -157,7 +169,9 @@ class UITH : Plugin() {
             }
 
             if (it.containsArg("current")) {
-                val configData = settings.getString("jsonConfig", null)
+                val configData = settings.getString("jsonConfig", 
+                    GsonUtils.toJson(DEFAULT_CATBOX_CONFIG)
+                )
                 val configRegex = settings.getString("regex", null)
                 val catboxUserhash = settings.getString("catboxUserhash", "")
                 val userhashDisplay = if (catboxUserhash.isNullOrEmpty()) "Not set (anonymous uploads)" else "Set"
@@ -206,12 +220,10 @@ class UITH : Plugin() {
             // Check if there are any attachments
             if (attachments.isEmpty()) { return@before }
 
-            // Don't try to upload if no sxcu config given
-            val sxcuConfig = settings.getString("jsonConfig", null)
-            if (sxcuConfig == null) {
-                LOG.debug("jsonConfig not provided, skipping upload...")
-                return@before
-            }
+            // Get config, use default Catbox config if not set
+            val sxcuConfig = settings.getString("jsonConfig", 
+                GsonUtils.toJson(DEFAULT_CATBOX_CONFIG)
+            )
             val configData = GsonUtils.fromJson(sxcuConfig, Config::class.java)
             
             // Get catbox userhash if available
