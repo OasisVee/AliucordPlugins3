@@ -1,6 +1,6 @@
 version = "1.1.1"
 description = "Upload images to catbox.moe directly from Discord."
-
+aliucord.author("scruz", 794527403580981248L)
 aliucord.changelog.set(
         """
         # 1.1.1
