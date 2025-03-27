@@ -70,8 +70,10 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // RESET JSON BUTTON
         val resetButton = Button(ctx).apply {
             text = "Reset JSON to Default"
+            setBackgroundColor(ColorCompat.getColor(ctx, R.b.colorError))
+            setTextColor(ColorCompat.getColor(ctx, R.b.colorOnError))
             setOnClickListener {
-                settings.setString("jsonConfig", "")
+                settings.delete("jsonConfig")
                 Utils.showToast("JSON configuration reset to default")
             }
         }
@@ -144,6 +146,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         addView(input)
         addView(button)
+        addView(resetButton)
         addView(errorField)
 
         addView(divider)
@@ -166,7 +169,6 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         addView(advHeader)
         addView(uploadAllAttachments)
         addView(switchOffPlugin)
-        addView(resetButton)
         
         addView(thirdDivider)
         addView(linksHeader)
