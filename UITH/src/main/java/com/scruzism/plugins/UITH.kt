@@ -148,7 +148,7 @@ class UITH : Plugin() {
             )
         )
 
-        commands.registerCommand("uith", "Upload Image To Host", args) {
+        commands.registerCommand("cuith", "(Catbox) Upload Image To Host", args) {
             if (it.containsArg("add")) {
                 val config = try {
                     GsonUtils.fromJson(it.getSubCommandArgs("add")?.get("json").toString(), Config::class.java)
