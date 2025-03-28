@@ -25,18 +25,17 @@ import com.discord.views.CheckedSetting
 
 class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
-    // Dracula Color Scheme
+    // Catppuccin Mocha Color Scheme
     private val colors = object {
-        val background = 0xFF282A36.toInt()
-        val foreground = 0xFFF8F8F2.toInt()
-        val comment = 0xFF6272A4.toInt()
-        val cyan = 0xFF8BE9FD.toInt()
-        val green = 0xFF50FA7B.toInt()
-        val orange = 0xFFFFB86C.toInt()
-        val pink = 0xFFFF79C6.toInt()
-        val purple = 0xFFBD93F9.toInt()
-        val red = 0xFFFF5555.toInt()
-        val yellow = 0xFFF1FA8C.toInt()
+        val base = 0xFF1E1E2E.toInt()       // Base background
+        val text = 0xFFCDD6F4.toInt()       // Main text color
+        val subtext = 0xFFA6ADC8.toInt()    // Subtext color (comments)
+        val lavender = 0xFFB4BEFE.toInt()   // Headers/Highlights
+        val green = 0xFFA6E3A1.toInt()      // Save buttons
+        val peach = 0xFFFAB387.toInt()      // Links/Warnings
+        val red = 0xFFF38BA8.toInt()        // Error/Reset buttons
+        val blue = 0xFF89B4FA.toInt()       // Secondary buttons
+        val surface0 = 0xFF313244.toInt()   // Dividers/Secondary backgrounds
     }
 
     @SuppressLint("SetTextI18n")
@@ -46,8 +45,8 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         val ctx = requireContext()
         val p = DimenUtils.defaultPadding
 
-        // Main layout with Dracula background
-        view?.setBackgroundColor(colors.background)
+        // Main layout with Catppuccin Mocha background
+        view?.setBackgroundColor(colors.base)
 
         // Create a vertical layout for better organization
         val mainLayout = LinearLayout(ctx).apply {
@@ -59,7 +58,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // Section Header
         fun createSectionHeader(text: String): TextView = TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Header).apply {
             this.text = text
-            setTextColor(colors.purple)
+            setTextColor(colors.lavender)
             typeface = Typeface.DEFAULT_BOLD
             setPadding(0, p * 2, 0, p)
         }
@@ -67,7 +66,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // Styled Text
         fun createDescriptionText(text: String): TextView = TextView(ctx).apply {
             this.text = text
-            setTextColor(colors.foreground)
+            setTextColor(colors.text)
             setPadding(p, p, p, p)
         }
 
@@ -78,15 +77,15 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // Regex Input
         val input = TextInput(ctx, "Regex").apply {
             editText.setText(settings.getString("regex", "https:\\/\\/files\\.catbox\\.moe\\/[\\w.-]*"))
-            editText.setTextColor(colors.foreground)
-            editText.setHintTextColor(colors.comment)
+            editText.setTextColor(colors.text)
+            editText.setHintTextColor(colors.subtext)
         }
         mainLayout.addView(input)
 
         // Save Button
         val button = Button(ctx).apply {
             text = "Save"
-            setTextColor(colors.background)
+            setTextColor(colors.base)
             setBackgroundColor(colors.green)
             setOnClickListener {
                 settings.setString("regex", input.editText.text.toString().toRegex().toString())
@@ -97,7 +96,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         // Divider
         mainLayout.addView(Divider(ctx).apply { 
-            setBackgroundColor(colors.comment)
+            setBackgroundColor(colors.surface0)
             setPadding(p, p, p, p) 
         })
 
@@ -108,16 +107,16 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // Userhash Input
         val userhashInput = TextInput(ctx, "Userhash").apply {
             editText.setText(settings.getString("catboxUserhash", ""))
-            editText.setTextColor(colors.foreground)
-            editText.setHintTextColor(colors.comment)
+            editText.setTextColor(colors.text)
+            editText.setHintTextColor(colors.subtext)
         }
         mainLayout.addView(userhashInput)
 
         // Save Userhash Button
         val userhashButton = Button(ctx).apply {
             text = "Save"
-            setTextColor(colors.background)
-            setBackgroundColor(colors.cyan)
+            setTextColor(colors.base)
+            setBackgroundColor(colors.blue)
             setOnClickListener {
                 settings.setString("catboxUserhash", userhashInput.editText.text.toString())
                 Utils.showToast("Saved")
@@ -127,7 +126,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         // Divider
         mainLayout.addView(Divider(ctx).apply { 
-            setBackgroundColor(colors.comment)
+            setBackgroundColor(colors.surface0)
             setPadding(p, p, p, p) 
         })
 
@@ -162,7 +161,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         // Reset JSON Button
         val resetButton = Button(ctx).apply {
             text = "Reset JSON to Default"
-            setTextColor(colors.background)
+            setTextColor(colors.base)
             setBackgroundColor(colors.red)
             setOnClickListener {
                 settings.remove("jsonConfig")
@@ -173,7 +172,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
         // Divider
         mainLayout.addView(Divider(ctx).apply { 
-            setBackgroundColor(colors.comment)
+            setBackgroundColor(colors.surface0)
             setPadding(p, p, p, p) 
         })
 
@@ -184,7 +183,7 @@ class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
         val helpInfo = TextView(ctx).apply {
             linksClickable = true
             text = "- UITH README: https://git.io/JSyri"
-            setTextColor(colors.orange)
+            setTextColor(colors.peach)
         }
         Linkify.addLinks(helpInfo, Linkify.WEB_URLS)
         mainLayout.addView(helpInfo)
