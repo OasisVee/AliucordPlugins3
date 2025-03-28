@@ -25,19 +25,18 @@ import com.discord.views.CheckedSetting
 
 class PluginSettings(private val settings: SettingsAPI) : SettingsPage() {
 
-    // Catppuccin Mocha Color Scheme
+    // Cat-UITH Color Scheme (Dark Background)
     private val colors = object {
-        val base = 0xFF1E1E2E.toInt()       // Base background
-        val text = 0xFFCDD6F4.toInt()       // Main text color
-        val subtext = 0xFFA6ADC8.toInt()    // Subtext color (comments)
-        val lavender = 0xFFB4BEFE.toInt()   // Headers/Highlights
-        val green = 0xFFA6E3A1.toInt()      // Save buttons
-        val peach = 0xFFFAB387.toInt()      // Links/Warnings
-        val red = 0xFFF38BA8.toInt()        // Error/Reset buttons
-        val blue = 0xFF89B4FA.toInt()       // Secondary buttons
-        val surface0 = 0xFF313244.toInt()   // Dividers/Secondary backgrounds
+        val base = 0xFF1A1A1A.toInt()        // Deep dark background, slightly warmer than pure black
+        val text = 0xFFF0B3C9.toInt()        // Soft pink for main text (cat nose color)
+        val subtext = 0xFF8A5B6E.toInt()     // Muted mauve for secondary text (cat fur tone)
+        val lavender = 0xFFFFD1DC.toInt()    // Pastel pink for headers/highlights (soft cat-like color)
+        val green = 0xFF8A5B6E.toInt()       // Muted mauve for save buttons
+        val peach = 0xFFF0B3C9.toInt()       // Soft pink for links/warnings
+        val red = 0xFFFF9CAF.toInt()         // Soft reddish pink for error/reset buttons
+        val blue = 0xFF8A5B6E.toInt()        // Muted mauve for secondary buttons
+        val surface0 = 0xFF2C2C2C.toInt()    // Slightly lighter dark background for surfaces
     }
-
     @SuppressLint("SetTextI18n")
     override fun onViewBound(view: View?) {
         super.onViewBound(view)
