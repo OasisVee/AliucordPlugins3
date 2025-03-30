@@ -37,4 +37,4 @@ include(":WhichMessage")
 project(":WhichMessage").projectDir = File("./WhichMessage")
 
 include(":Waifu.im")
-project(":Waifu.im").projectDir = File("./Waifu.im")
+project(":Waifuim").projectDir = File("./Waifu.im")
